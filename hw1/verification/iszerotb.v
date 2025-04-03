@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
-module divbyfourtb;
+module iszerotb;
     // Inputs to DUT
-	reg [3:0] YO;
+	reg [3:0] BCD;
     // Outputs from DUT
     wire Zero;
 
@@ -16,7 +16,7 @@ module divbyfourtb;
     IsZero dut 
     (
         .Zero(Zero),
-        .YO(YO)
+        .BCD(BCD)
     );
 
     initial
@@ -26,7 +26,7 @@ module divbyfourtb;
         for (oneDigitBcd = 0; oneDigitBcd < 10; oneDigitBcd++)
         begin
             // isolate the digit
-            YO = oneDigitBcd%10;
+            BCD = oneDigitBcd%10;
             
             // Allow signals to propogate
             #1;

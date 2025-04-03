@@ -36,7 +36,7 @@ module leapyeartb;
             // Allow signals to propogate
             #1;
             // Calculate if leap year
-            if(((year%4 === 0)||(year%100 === 0)) && (year%400 !== 0))
+            if(((year%4 === 0)&&(year%100 !== 0)) || ((year%100 === 0)&&(year%400 === 0)))
             begin
                 expected = 1'b1;
             end
