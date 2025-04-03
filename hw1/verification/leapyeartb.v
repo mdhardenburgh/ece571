@@ -8,6 +8,7 @@ module leapyeartb;
 
     // simulation variables and signals
     integer year;
+    integer fails = 0;
     reg expected = 1'b0;
 
     // Instantiate module under test
@@ -52,9 +53,10 @@ module leapyeartb;
             else
             begin
                 $display("FAIL: Year %0d - Expected %0d, got %0d\n", year, expected, LY);
+                fails++;
             end
         end
-        $display("Testbench completed.\n");
+        $display("Testbench completed, %0d failures.\n", fails);
         $finish;
     end
 endmodule

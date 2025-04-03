@@ -1,0 +1,11 @@
+# vivado -mode batch -source structuralDivbyfourtb.tcl
+# use xvlog, xelab and xsim for simulation
+# read_verilog, synth_design for FPGA implemention
+
+exec xvlog -sv divbyfourtb.v ../design/structural/divbyfour.v
+# lint files
+exec xelab divbyfourtb
+
+exec xsim divbyfourtb -runall
+
+exit
