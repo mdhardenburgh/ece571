@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
-module leapyeartb
+module leapyeartb;
     // Inputs to DUT
-	reg [3:0] YM YH, YT, YO;
+	reg [3:0] YM, YH, YT, YO;
     // Outputs from DUT
     wire LY;
 
@@ -22,39 +22,39 @@ module leapyeartb
 
     initial
     begin
-        $display("Starting LeapYear module testbench")
-    end
+        $display("Starting LeapYear module testbench");
+    
+        for (year = 1582; year <= 4818; year++)
+        begin
+            // isolate the digit
+            YO = year%10;
+            YT = (year/10)%10;
+            YH = (year/100)%10;
+            YM = (year/1000)%10;
+            
+            // Allow signals to propogate
+            #1;
+            // Calculate if leap year
+            if(((year%4 === 0)||(year%100 === 0)) && (year%400 !== 0))
+            begin
+                expected = 1'b1;
+            end
+            else
+            begin
+                expected = 1'b0;
+            end
 
-    for (year = 1582; year <= 4818; year++)
-    begin
-        // isolate the digit
-        YO = year%10;
-        YT = (year/10)%10;
-        YH = (year/100)%10;
-        YM = (year/1000)%10;
-        
-        // Allow signals to propogate
-        #1;
-        // Calculate if leap year
-        if(((year%4 == 0)||(year%100 == 0)) && (year%400 != 0))
-        begin
-            expected = 1'b1;
+            // compare DUT result against expected and if pass or fail
+            if(expected === LY)
+            begin
+                $display("PASS, Year %0d \n", year);
+            end
+            else
+            begin
+                $display("FAIL: Year %0d - Expected %0d, got %0d\n", year, expected, LY);
+            end
         end
-        else
-        begin
-            expected = 1'b0;
-        end
-
-        // compare DUT result against expected and if pass or fail
-        if(expected == LY)
-        begin
-            $display("PASS, Year %0d \n", year);
-        end
-        else
-        begin
-            $display("FAIL: Year %0d - Expected %0d, got %0d", year, expected, LY);
-        end
+        $display("Testbench completed.\n");
+        $finish;
     end
-    $display("Testbench completed.");
-    $finish;
 endmodule
