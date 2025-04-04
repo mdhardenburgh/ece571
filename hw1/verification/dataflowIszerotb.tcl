@@ -1,8 +1,8 @@
-# vivado -mode batch -source structuralIszero.tcl
+# vivado -mode batch -source dataflowIszerotb.tcl
 # use xvlog, xelab and xsim for simulation
 # read_verilog, synth_design for FPGA implemention
 
-exec xvlog -sv iszerotb.v ../design/structural/iszero.v
+exec xvlog -sv iszerotb.v ../design/dataflow/iszero.v
 # lint files
 exec xelab iszerotb
 

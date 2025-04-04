@@ -3,8 +3,6 @@ module DivisibleByFour(Divisible, YT, YO);
     output wire Divisible;
 
     wire[24:0] div;
-    wire[3:0] YT;
-    wire[3:0] YO;
 
     assign div[24] = ~YT[3] & (~YT[2]) & (~YT[1]) & (~YT[0]) & (~YO[3]) & (~YO[2]) & (~YO[1]) & (~YO[0]); // 4*0 = 0
     assign div[0] = (~YT[3]) & (~YT[2]) & (~YT[1]) & (~YT[0]) & (~YO[3]) & (YO[2]) & (~YO[1]) & (~YO[0]); // 4*1 = 4

@@ -16,7 +16,7 @@ module LeapYear(LY, YM, YH, YT, YO);
     DivisibleByFour upperDigDiv(upperDigits[0], YM, YH);
     IsZero isYHzero(upperDigits[1], YO);
     IsZero isYMzero(upperDigits[2], YT);
-    assign finalOrWire[1] = upperDigits[0] & upperDigits[1] & upperDigits[2]
+    assign finalOrWire[1] = upperDigits[0] & upperDigits[1] & upperDigits[2];
 
     assign LY = finalOrWire[0] | finalOrWire[1];
 

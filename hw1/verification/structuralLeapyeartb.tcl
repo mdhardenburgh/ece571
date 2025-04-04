@@ -2,7 +2,7 @@
 # use xvlog, xelab and xsim for simulation
 # read_verilog, synth_design for FPGA implemention
 
-exec xvlog -sv leapyeartb.v ../design/structural/leapyear.v
+exec xvlog -sv leapyeartb.v ../design/structural/leapyear.v ../design/structural/divbyfour.v ../design/structural/iszero.v
 # lint files
 exec xelab leapyeartb
 
