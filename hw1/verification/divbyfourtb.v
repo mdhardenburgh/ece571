@@ -1,5 +1,9 @@
+// copyright (C) Matthew Hardenburgh
+// matthew@hardenburgh.io
+
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
+// @brief test bench for checking DivisibleByFour 
 module divbyfourtb;
     // Inputs to DUT
 	reg [3:0] YT, YO;

@@ -1,3 +1,6 @@
+# copyright (C) Matthew Hardenburgh
+# matthew@hardenburgh.io
+
 # vivado -mode batch -source <your_Tcl_script>
 # vivado -mode batch -source leapyear.tcl
 # read_verilog, synth_design for FPGA implemention

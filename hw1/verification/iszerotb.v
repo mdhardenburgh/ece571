@@ -1,3 +1,6 @@
+// copyright (C) Matthew Hardenburgh
+// matthew@hardenburgh.io
+
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
 module iszerotb;

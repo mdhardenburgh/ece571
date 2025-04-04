@@ -1,3 +1,10 @@
+// copyright (C) Matthew Hardenburgh
+// matthew@hardenburgh.io
+
+// @brief check if 2 BCD digits are divisible by 4
+// @output 1'b1 if divisible by 4, 1'b0 if not
+// @input tens place BCD digit
+// @input ones place BCD digit
 module DivisibleByFour(Divisible, YT, YO);
     input wire[3:0] YT, YO;
     output wire Divisible;
