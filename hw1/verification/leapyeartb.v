@@ -3,7 +3,7 @@
 
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
-module leapyeartb;
+module top;
     // Inputs to DUT
 	reg [3:0] YM, YH, YT, YO;
     // Outputs from DUT

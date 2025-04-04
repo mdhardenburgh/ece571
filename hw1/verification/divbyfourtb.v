@@ -4,7 +4,7 @@
 `timescale 1ns / 1ps //`timescale <unit_time> / <resolution>
 
 // @brief test bench for checking DivisibleByFour 
-module divbyfourtb;
+module top;
     // Inputs to DUT
 	reg [3:0] YT, YO;
     // Outputs from DUT
