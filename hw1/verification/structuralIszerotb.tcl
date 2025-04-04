@@ -7,8 +7,8 @@
 
 exec xvlog -sv iszerotb.v ../design/structural/iszero.v
 # lint files
-exec xelab iszerotb
+exec xelab top
 
-exec xsim iszerotb -runall
+exec xsim top -runall
 
 exit

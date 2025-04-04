@@ -7,8 +7,8 @@
 
 exec xvlog -sv leapyeartb.v ../design/structural/leapyear.v ../design/structural/divbyfour.v ../design/structural/iszero.v
 # lint files
-exec xelab leapyeartb
+exec xelab top
 
-exec xsim leapyeartb -runall
+exec xsim top -runall
 
 exit

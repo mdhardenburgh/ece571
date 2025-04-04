@@ -7,8 +7,8 @@
 
 exec xvlog -sv leapyeartb.v ../design/dataflow/leapyear.v
 # lint files
-exec xelab leapyeartb
+exec xelab top
 
-exec xsim leapyeartb -runall
+exec xsim top -runall
 
 exit

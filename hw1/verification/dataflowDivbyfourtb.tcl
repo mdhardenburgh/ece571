@@ -7,8 +7,8 @@
 
 exec xvlog -sv divbyfourtb.v ../design/dataflow/divbyfour.v
 # lint files
-exec xelab divbyfourtb
+exec xelab top
 
-exec xsim divbyfourtb -runall
+exec xsim top -runall
 
 exit
