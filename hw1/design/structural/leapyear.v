@@ -27,6 +27,6 @@ module LeapYear(LY, YM, YH, YT, YO);
     IsZero isYMzero(upperDigits[2], YT);
     and upperAnd(finalOrWire[1], upperDigits[0], upperDigits[1], upperDigits[2]);
 
-    or(LY, finalOrWire[0], finalOrWire[1]);
+    or finalOr(LY, finalOrWire[0], finalOrWire[1]);
 
 endmodule
