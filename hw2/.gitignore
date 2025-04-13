@@ -1,0 +1,5 @@
+*.jou
+*.log
+*.pb
+xsim.dir
+.vscode/
