@@ -17,6 +17,6 @@ module fa(y, cOut, a, b, c);
 
     // y = C XOR (A XOR B)
     // cout = BC + AC + AB
-    assign  y = c^(a^b);
-    assign  cOut = (a&b) | (a&c) | (b&c);
+    assign #1 y = c^(a^b);
+    assign #1 cOut = (a&b) | (a&c) | (b&c);
 endmodule

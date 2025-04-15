@@ -26,7 +26,7 @@ module top #(parameter WIDTH = 8);
         for(iter = 0; iter <= NUM_ITERS; iter++)
         begin
             {multiplicand, multiplier} = iter;
-            #(WIDTH+WIDTH) // let inputs percolate
+            #(WIDTH*WIDTH) // let inputs percolate
             expectedResult = multiplier*multiplicand;
             if(expectedResult === product)
             begin
