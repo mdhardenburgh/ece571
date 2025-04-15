@@ -7,7 +7,7 @@
 
 exec xvlog -sv fa.sv rca.sv mult.sv multtb.sv --define DEBUG=1
 # lint files
-exec xelab top --define DEBUG=1
+exec xelab top
 
 exec xsim top -runall 
 

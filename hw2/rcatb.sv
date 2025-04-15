@@ -1,3 +1,8 @@
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
+
 // % vsim –c –gNumBits=8 Top
 module top #(parameter WIDTH = 8);
 

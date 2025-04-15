@@ -1,4 +1,16 @@
-// use generates
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
+
+/**
+    @brief parameterized ripple carry adder, defaults to 8
+    @output y WIDTH wide sum
+    @output cOut carry output bit
+    @input a WIDTH wide aguend
+    @input b WIDTH wide addend
+    @input c carry in bit
+*/
 module rca #(parameter  WIDTH = 8)
 (
     output wire[WIDTH-1:0] y, 

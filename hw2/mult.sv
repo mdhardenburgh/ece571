@@ -1,16 +1,22 @@
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
+
+/**
+    @brief parameterized multipler, defaults to 8
+    @input multiplicand M WIDTH wide
+    @input multiplier Q WIDTH wide
+    @output product P WIDTH wide
+*/
 module multiply #(parameter WIDTH = 8)
 (
     input[WIDTH-1:0] multiplicand, // M
     input[WIDTH-1:0] multiplier, // Q
-    output[(WIDTH*2)-1:0] product, // P
-    output[(WIDTH)-1:0] rcaInputB_D, // debugging
-    output carryOut, // debugging
-    output[(WIDTH)-1:0] rcaInputA_D,
-    output[WIDTH-1:0] partialProducts_D
+    output[(WIDTH*2)-1:0] product // P
 );
 
-    //wire[packed][unpacked] myWire
-    //wire[unpacked][packed] myWire????
+    //wire[unpacked][packed] myWire
     //wire[packed] = mywire[unpacked][packed]
     parameter productBitWidth = (WIDTH*2)-1;
     parameter lastCoutIndex = WIDTH-2;
@@ -74,13 +80,5 @@ module multiply #(parameter WIDTH = 8)
         end
     endgenerate
     assign product[productBitWidth] = cOut[lastCoutIndex];
-    assign rcaInputB_D = rcaInputB[0][WIDTH-1:0];
-    assign carryOut = cOut[0];
-    assign rcaInputA_D = rcaInputA[1][WIDTH-1:0];
-    assign partialProducts_D = partialProducts[2][WIDTH-1:0];
-    // extract the last RCA output
-    //assign product[productBitWidth:productBitWidth-WIDTH] = {cOut[lastCoutIndex], rcaOutput[lastRcaIndex][WIDTH-1:0]};
-    //7th bit, zero indexed
-    //assign product[productBitWidth:productBitWidth-WIDTH] = {cOut[lastCoutIndex],0};
 
 endmodule

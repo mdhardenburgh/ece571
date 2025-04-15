@@ -1,5 +1,7 @@
-// copyright (C) Matthew Hardenburgh
-// matthew@hardenburgh.io
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
 
 module top;
 
