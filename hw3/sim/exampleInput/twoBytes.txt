@@ -1,0 +1,24 @@
+1, 1 // reset
+1, 0 // should be in idle state 
+1, 0 // should be in idle state
+0, 0 // start signal 
+0, 0 // 0
+0, 0 // 1
+0, 0 // 2
+0, 0 // 3
+0, 0 // 4
+0, 0 // 5
+0, 0 // 6
+1, 0 // 7
+1, 0 // stop signal, now should see 1 on the output
+0, 0 // another byte now the output is valid, set done bit
+0, 0 // 0
+0, 0 // 1
+0, 0 // 2
+0, 0 // 3
+0, 0 // 4
+0, 0 // 5
+1, 0 // 6
+0, 0 // 7
+1, 0 // stop signal, now should see 2 on the output
+1, 0 // Idle state another byte now the output is valid, set done bit

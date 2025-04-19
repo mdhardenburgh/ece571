@@ -2,13 +2,12 @@
 #include <string>
 #include <fstream>
 
-enum class State:uint32_t{IDLE, RECIEVE, END, RESET};
+enum class State:uint32_t{IDLE, RECIEVE, END, RESET, EXCEPTION};
 
 class SerialReciver
 {
     public:
         SerialReciver();
-        SerialReciver(std::string outputFile, std::string m_inputFile);
         ~SerialReciver();
         void mainLoop();
         void setOutputFile(std::string fileName);
@@ -19,11 +18,11 @@ class SerialReciver
         void writeToFile(std::string message);
         bool readInput(uint32_t& in, bool& reset); // return true if error
         void writeOutput();
-        void writeDone();
         
+        uint32_t m_doneBit = 0;
         std::ofstream m_outputFile;
         std::ifstream m_inputFile;
-        uint32_t m_outByte = 0x0;
+        uint8_t m_outByte = 0x0;
         uint64_t m_clockCycle = 0;
         State m_currentState = State::IDLE;
         uint32_t m_bitCounter = 0;

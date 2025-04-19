@@ -82,7 +82,7 @@ bool SerialReciver::nextState()
             {
                 if(reset == true)
                 {
-                    m_currentState = State::RESET;
+                    m_currentState = State::IDLE;
                     break;
                 }
                 else if(reset == false)
@@ -113,7 +113,8 @@ bool SerialReciver::nextState()
             {
                 if(reset == true)
                 {
-                    m_currentState = State::RESET;
+                    m_bitCounter = 0;
+		    m_currentState = State::IDLE;
                     break;
                 }
                 else if(reset == false)
@@ -166,7 +167,7 @@ bool SerialReciver::nextState()
             {
                 if(reset == true)
                 {
-                    m_currentState = State::RESET;
+                    m_currentState = State::IDLE;
                     break;
                 }
                 else if(reset == false)
@@ -203,7 +204,7 @@ bool SerialReciver::nextState()
 
                 if(reset == true)
                 {
-                    m_currentState = State::RESET;
+                    m_currentState = State::IDLE;
                     break;
                 }
                 else
