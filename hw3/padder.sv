@@ -36,10 +36,10 @@ module firstPipelineReg
     output logic[31:0] Aout, Bout,
     output logic[31:0] S,
     output logic CO
-)
+);
     logic[7:0] adder_out;
     logic carryOut;
-    rca adder(adder_out, carryOut, Ain[7:0], Bin[7:0], CI)
+    rca adder(adder_out, carryOut, Ain[7:0], Bin[7:0], CI);
     
     always@(posedge Clock)
     begin
@@ -59,10 +59,10 @@ module secondPipelineReg
     output logic[31:0] Aout, Bout,
     output logic[31:0] S,
     output logic CO
-)
+);
     logic[7:0] adder_out;
     logic carryOut;
-    rca adder(adder_out, carryOut, Ain[15:8], Bin[15:8], CI)
+    rca adder(adder_out, carryOut, Ain[15:8], Bin[15:8], CI);
     
     always@(posedge Clock)
     begin
@@ -83,10 +83,10 @@ module thirdPipelineReg
     output logic[31:0] Aout, Bout,
     output logic[31:0] S,
     output logic CO
-)
+);
     logic[7:0] adder_out;
     logic carryOut;
-    rca adder(adder_out, carryOut, Ain[23:16], Bin[23:16], CI)
+    rca adder(adder_out, carryOut, Ain[23:16], Bin[23:16], CI);
     
     always@(posedge Clock)
     begin
@@ -107,10 +107,10 @@ module fourthPipelineReg
     input logic[31:0] sumIn,
     output logic[31:0] S,
     output logic CO
-)
+);
     logic[7:0] adder_out;
     logic carryOut;
-    rca adder(adder_out, carryOut, Ain[31:24], Bin[31:24], CI)
+    rca adder(adder_out, carryOut, Ain[31:24], Bin[31:24], CI);
     
     always@(posedge Clock)
     begin
