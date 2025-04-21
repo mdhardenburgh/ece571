@@ -4,84 +4,109 @@ module PAdder
     output logic[31:0] S,
     output logic CO,
     input logic[31:0] A, B,
-    input logic CI,
-    output logic[31:0] A_debug0,
-    output logic[31:0] A_debug1,
-    output logic[31:0] A_debug2,
-    output logic[31:0] A_debug3,
+    input logic CI
+    `ifdef DEBUG
+        ,
+        output logic[31:0] A_debug0,
+        output logic[31:0] A_debug1,
+        output logic[31:0] A_debug2,
+        output logic[31:0] A_debug3,
 
-    output logic[31:0] B_debug0,
-    output logic[31:0] B_debug1,
-    output logic[31:0] B_debug2,
-    output logic[31:0] B_debug3,
+        output logic[31:0] B_debug0,
+        output logic[31:0] B_debug1,
+        output logic[31:0] B_debug2,
+        output logic[31:0] B_debug3,
 
-    output logic[31:0] S_debug0,
-    output logic[31:0] S_debug1,
-    output logic[31:0] S_debug2,
-    output logic[31:0] S_debug3,
+        output logic[31:0] S_debug0,
+        output logic[31:0] S_debug1,
+        output logic[31:0] S_debug2,
+        output logic[31:0] S_debug3,
 
-    output logic[6:0] C_debug
+        output logic[3:0] C_debug
+    `endif
 );
 
-    // 4‑deep array of 32‑bit regs
-    logic[2:0][31:0] pipelineA;
-    logic[2:0][31:0] pipelineB;
-    logic[3:0][31:0] sum;
-    logic[6:0] carry;
+    logic[7:0] sum0;
+    logic[31:0] pipeline0Sum;
+    logic carry0;
+    logic pipeline0Carry;
+    logic[31:0] pipeline0A;
+    logic[31:0] pipeline0B;
 
-    assign sum[0][31:8] = 24'b0;
+    logic[7:0] sum1;
+    logic[31:0] pipeline1Sum;
+    logic carry1;
+    logic pipeline1Carry;
+    logic[31:0] pipeline1A;
+    logic[31:0] pipeline1B;
 
-    assign C_debug[0] = carry[0];
-    assign C_debug[1] = carry[1];
-    assign C_debug[2] = carry[2];
-    assign C_debug[3] = carry[3];
-    assign C_debug[4] = carry[4];
-    assign C_debug[5] = carry[5];
-    assign C_debug[6] = carry[6];
+    logic[7:0] sum2;
+    logic carry2;
+    logic[31:0] pipeline2Sum;
+    logic pipeline2Carry;
+    logic[31:0] pipeline2A;
+    logic[31:0] pipeline2B;
 
-    rca adder1(sum[0][7:0], carry[0], A[7:0], B[7:0], CI);
-    rca adder2(sum[1][15:8], carry[2], pipelineA[0][15:8], pipelineB[0][15:8], carry[1]);
-    rca adder3(sum[2][23:16], carry[4], pipelineA[1][23:16], pipelineB[1][23:16], carry[3]);
-    rca adder4(sum[3][31:24], carry[6], pipelineA[2][31:24], pipelineB[2][31:24], carry[5]);
+    logic[7:0] sum3;
+    logic carry3;
+    logic[31:0] pipeline3A;
+    logic[31:0] pipeline3B;
 
-    assign A_debug0 = pipelineA[0];
-    assign A_debug1 = pipelineA[1];
-    assign A_debug2 = pipelineA[2];
+    `ifdef DEBUG
+        assign A_debug0 = pipeline0A;
+        assign A_debug1 = pipeline1A;
+        assign A_debug2 = pipeline2A;
+        assign A_debug3 = pipeline3A;
 
-    assign B_debug0 = pipelineB[0];
-    assign B_debug1 = pipelineB[1];
-    assign B_debug2 = pipelineB[2];
+        assign B_debug0 = pipeline0B;
+        assign B_debug1 = pipeline1B;
+        assign B_debug2 = pipeline2B;
+        assign B_debug3 = pipeline3B;
 
-    assign S_debug0 = sum[0];
-    assign S_debug1 = sum[1];
-    assign S_debug2 = sum[2];
-    assign S_debug3 = sum[3];
+        assign S_debug0 = pipeline0Sum;
+        assign S_debug1 = pipeline1Sum;
+        assign S_debug2 = pipeline2Sum;
+        assign S_debug3 = S;
 
+        assign C_debug[0] = pipeline0Carry;
+        assign C_debug[1] = pipeline1Carry;
+        assign C_debug[2] = pipeline2Carry;
+        assign C_debug[3] = CO;
+    `endif
+
+    rca adder0(sum0, carry0, A[7:0], B[7:0], CI);
+    pipelineStage stage0(Clock, {24'b0, sum0}, carry0, A, B, pipeline0Sum, pipeline0Carry, pipeline0A, pipeline0B);
+
+    rca adder1(sum1, carry1, pipeline0A[15:8], pipeline0B[15:8], pipeline0Carry);
+    pipelineStage stage1(Clock, {16'b0, sum1, pipeline0Sum[7:0]}, carry1, pipeline0A, pipeline0B, pipeline1Sum, pipeline1Carry, pipeline1A, pipeline1B);
+
+    rca adder2(sum2, carry2, pipeline1A[23:16], pipeline1B[23:16], pipeline1Carry);
+    pipelineStage stage2(Clock, {8'b0, sum2, pipeline1Sum[15:0]}, carry2, pipeline1A, pipeline1B, pipeline2Sum, pipeline2Carry, pipeline2A, pipeline2B);
+
+    rca adder3(sum3, carry3, pipeline2A[31:24], pipeline2B[31:24], pipeline2Carry);
+    pipelineStage stage3(Clock, {sum3, pipeline2Sum[23:0]}, carry3, pipeline2A, pipeline2B, S, CO, pipeline3A, pipeline3B);
+
+endmodule
+
+module pipelineStage
+(
+    input logic Clock,
+    input logic[31:0] inputSum,
+    input logic carryOut,
+    input logic[31:0] inputPipelineA,
+    input logic[31:0] inputPipelineB,
+
+    output logic[31:0] outputSum,
+    output logic carryIn,
+    output logic[31:0] outputPipelineA,
+    output logic[31:0] outputPipelineB
+);
     always@(posedge Clock)
     begin
-        //pipelineA[3] <= pipelineA[2];
-        pipelineA[2] <= pipelineA[1];
-        pipelineA[1] <= pipelineA[0];
-        pipelineA[0] <= A;
-
-        //pipelineB[3] <= pipelineB[2];
-        pipelineB[2] <= pipelineB[1];
-        pipelineB[1] <= pipelineB[0];
-        pipelineB[0] <= B;
-
-        S <= sum[3];
-        sum[3] <= sum[2];
-        sum[2] <= sum[1];
-        sum[1] <= sum[0];
-
-        CO <= carry[6];
-        carry[6] <= carry[5];
-        carry[5] <= carry[4];
-        carry[4] <= carry[3];
-        carry[3] <= carry[2];
-        carry[2] <= carry[1];
-        carry[1] <= carry[0];
+        outputSum <= inputSum;
+        carryIn <= carryOut;
+        outputPipelineA <= inputPipelineA;
+        outputPipelineB <= inputPipelineB;
     end
-
 endmodule
 
