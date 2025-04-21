@@ -4,69 +4,84 @@ module PAdder
     output logic[31:0] S,
     output logic CO,
     input logic[31:0] A, B,
-    input logic CI
+    input logic CI,
+    output logic[31:0] A_debug0,
+    output logic[31:0] A_debug1,
+    output logic[31:0] A_debug2,
+    output logic[31:0] A_debug3,
+
+    output logic[31:0] B_debug0,
+    output logic[31:0] B_debug1,
+    output logic[31:0] B_debug2,
+    output logic[31:0] B_debug3,
+
+    output logic[31:0] S_debug0,
+    output logic[31:0] S_debug1,
+    output logic[31:0] S_debug2,
+    output logic[31:0] S_debug3,
+
+    output logic[6:0] C_debug
 );
-    logic[31:0] a_pipeline1;
-    logic[31:0] b_pipeline1;
-    logic[31:0] sum_pipeline1;
-    logic[31:0] sum_pipeline2;
-    logic[31:0] sum_pipeline3;
 
-    logic[31:0] a_pipeline2;
-    logic[31:0] b_pipeline2;
+    // 4‑deep array of 32‑bit regs
+    logic[2:0][31:0] pipelineA;
+    logic[2:0][31:0] pipelineB;
+    logic[3:0][31:0] sum;
+    logic[6:0] carry;
 
-    logic[31:0] a_pipeline3;
-    logic[31:0] b_pipeline3;
+    assign sum[0][31:8] = 24'b0;
 
-    logic[7:0] sum_adder1;
-    logic[15:0] sum_adder2;
-    logic[23:0] sum_adder3;
-    logic[31:0] sum_adder4;
+    assign C_debug[0] = carry[0];
+    assign C_debug[1] = carry[1];
+    assign C_debug[2] = carry[2];
+    assign C_debug[3] = carry[3];
+    assign C_debug[4] = carry[4];
+    assign C_debug[5] = carry[5];
+    assign C_debug[6] = carry[6];
 
-    rca adder1(sum_adder1, carryout_adder1, A[7:0], B[7:0], CI);
-    pipelineReg pipeline1(Clock, A, B, carryout_adder1, {24'b0, sum_adder1}, a_pipeline1, b_pipeline1, sum_pipeline1, carryout_pipeline1);
+    rca adder1(sum[0][7:0], carry[0], A[7:0], B[7:0], CI);
+    rca adder2(sum[1][15:8], carry[2], pipelineA[0][15:8], pipelineB[0][15:8], carry[1]);
+    rca adder3(sum[2][23:16], carry[4], pipelineA[1][23:16], pipelineB[1][23:16], carry[3]);
+    rca adder4(sum[3][31:24], carry[6], pipelineA[2][31:24], pipelineB[2][31:24], carry[5]);
 
-    rca adder2(sum_adder2[7:0], carryOut_adder2, a_pipeline1[15:8], b_pipeline1[15:8], carryout_pipeline1);
-    pipelineReg pipeline2(Clock, a_pipeline1, b_pipeline1, carryOut_adder2, {(sum_adder2<<8)|sum_pipeline1}, a_pipeline2, b_pipeline2, sum_pipeline2, carryout_pipeline2);
+    assign A_debug0 = pipelineA[0];
+    assign A_debug1 = pipelineA[1];
+    assign A_debug2 = pipelineA[2];
 
-    rca adder3(sum_adder3[7:0], carryOut_adder3, a_pipeline2[23:16], b_pipeline2[23:16], carryout_pipeline2);
-    pipelineReg pipeline3(Clock, a_pipeline2, b_pipeline2, carryOut_adder3, {(sum_adder3<<16)|sum_pipeline2}, a_pipeline3, b_pipeline3, sum_pipeline3, carryout_pipeline3);
+    assign B_debug0 = pipelineB[0];
+    assign B_debug1 = pipelineB[1];
+    assign B_debug2 = pipelineB[2];
 
-    rca adder4(sum_adder4[7:0], carryOut_adder4, a_pipeline3[31:24], b_pipeline3[31:24], carryout_pipeline3);
-    lastPipelineReg last(Clock, carryOut_adder4, {(sum_adder4<<24)|sum_pipeline3}, S, CI);
+    assign S_debug0 = sum[0];
+    assign S_debug1 = sum[1];
+    assign S_debug2 = sum[2];
+    assign S_debug3 = sum[3];
 
-endmodule
-
-module pipelineReg
-(
-    input logic Clock,
-    input logic[31:0] Ain, Bin,
-    input logic carryOutInput,
-    input logic[31:0] inputSum,
-    output logic[31:0] Aout, Bout,
-    output logic[31:0] outputSum,
-    output logic carryOutOutput
-);
     always@(posedge Clock)
     begin
-        Aout <= Ain;
-        Bout <= Bin;
-        carryOutOutput <= carryOutInput;
-        outputSum <= inputSum;
+        //pipelineA[3] <= pipelineA[2];
+        pipelineA[2] <= pipelineA[1];
+        pipelineA[1] <= pipelineA[0];
+        pipelineA[0] <= A;
+
+        //pipelineB[3] <= pipelineB[2];
+        pipelineB[2] <= pipelineB[1];
+        pipelineB[1] <= pipelineB[0];
+        pipelineB[0] <= B;
+
+        S <= sum[3];
+        sum[3] <= sum[2];
+        sum[2] <= sum[1];
+        sum[1] <= sum[0];
+
+        CO <= carry[6];
+        carry[6] <= carry[5];
+        carry[5] <= carry[4];
+        carry[4] <= carry[3];
+        carry[3] <= carry[2];
+        carry[2] <= carry[1];
+        carry[1] <= carry[0];
     end
+
 endmodule
 
-module lastPipelineReg
-(
-    input logic Clock,
-    input logic carryOutInput,
-    input logic[31:0] inputSum,
-    output logic[31:0] outputSum,
-    output logic carryOutOutput
-);
-    always@(posedge Clock)
-    begin
-        carryOutOutput <= carryOutInput;
-        outputSum <= inputSum;
-    end
-endmodule
