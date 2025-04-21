@@ -6,6 +6,7 @@ module top;
     logic[31:0] A, B;
     logic CI;
 
+    `ifdef DEBUG
     logic[31:0] A_debug0;
     logic[31:0] A_debug1;
     logic[31:0] A_debug2;
@@ -22,6 +23,7 @@ module top;
     logic[31:0] S_debug3;
 
     logic[3:0] C_debug;
+    `endif
     
     // A, B, CI
     logic[64:0] iter = 0;
@@ -31,7 +33,6 @@ module top;
     // S, CO
     logic[32:0] expectedResult;
     integer fails = 0;
-    logic[64:0] NUM_RANGE = (64'h1<<((32*2) + 1)) + 4;
     integer maxInt = 2147483647;
 
     // 4‑deep array of 32‑bit regs
@@ -44,8 +45,9 @@ module top;
         .CO(CO),
         .A(A),
         .B(B),
-        .CI(CI),
-
+        .CI(CI)
+        `ifdef DEBUG
+        ,
         .A_debug0(A_debug0),
         .A_debug1(A_debug1),
         .A_debug2(A_debug2),
@@ -62,6 +64,7 @@ module top;
         .S_debug3(S_debug3),
 
         .C_debug(C_debug)
+        `endif
     );
 
     initial
@@ -73,7 +76,7 @@ module top;
     initial
     begin
         $display("Begin Testbench");
-        repeat (256)
+        repeat (maxInt)
         begin
             @(posedge Clock)
             begin
@@ -89,14 +92,9 @@ module top;
                 cInIter <= $urandom_range(0, 1);
                 
                 pipeline[0] <= {aIter, bIter, cInIter};
-                //pipeline[0] <= iter;
                 A <= aIter;
                 B <= bIter;
-                CI <= cInIter;
-                //A <= iter[64:32];
-                //B <= iter[32:1];
-                //CI <= iter[0];
-                
+                CI <= cInIter;                
                 expectedResult <= pipeline[3][64:33] + pipeline[3][32:1] + pipeline[3][0];
                 `ifdef DEBUG
                     $display("aIter = %0d, bIter = %0d, cInIter = %0d", aIter, bIter, cInIter); 
