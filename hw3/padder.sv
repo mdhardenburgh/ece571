@@ -6,118 +6,67 @@ module PAdder
     input logic[31:0] A, B,
     input logic CI
 );
-    wire[31:0] firstToSecond_Aout;
-    wire[31:0] firstToSecond_Bout;
-    wire[31:0] firstToSecond_sum;
-    wire firstToSecond_carryOut;
+    logic[31:0] a_pipeline1;
+    logic[31:0] b_pipeline1;
+    logic[31:0] sum_pipeline1;
+    logic[31:0] sum_pipeline2;
+    logic[31:0] sum_pipeline3;
 
-    wire[31:0] secondToThird_Aout;
-    wire[31:0] secondToThird_Bout;
-    wire[31:0] secondToThird_sum;
-    wire secondToThird_carryOut;
+    logic[31:0] a_pipeline2;
+    logic[31:0] b_pipeline2;
 
-    wire[31:0] thirdToFourth_Aout;
-    wire[31:0] thirdToFourth_Bout;
-    wire[31:0] thirdToFourth_sum;
-    wire thirdToFourth_carryOut;
-    
-    firstPipelineReg first(Clock, A, B, CI, firstToSecond_Aout, firstToSecond_Bout, firstToSecond_sum, firstToSecond_carryOut);
-    secondPipelineReg second(Clock, firstToSecond_Aout, firstToSecond_Bout, firstToSecond_carryOut, firstToSecond_sum, secondToThird_Aout, secondToThird_Bout, secondToThird_sum, secondToThird_carryOut);
-    thirdPipelineReg third(Clock, secondToThird_Aout, secondToThird_Bout, secondToThird_carryOut, secondToThird_sum, thirdToFourth_Aout, thirdToFourth_Bout, thirdToFourth_sum, thirdToFourth_carryOut);
-    fourthPipelineReg fourth(Clock, thirdToFourth_Aout, thirdToFourth_Bout, thirdToFourth_carryOut, thirdToFourth_sum, S, CO);
+    logic[31:0] a_pipeline3;
+    logic[31:0] b_pipeline3;
+
+    logic[7:0] sum_adder1;
+    logic[15:0] sum_adder2;
+    logic[23:0] sum_adder3;
+    logic[31:0] sum_adder4;
+
+    rca adder1(sum_adder1, carryout_adder1, A[7:0], B[7:0], CI);
+    pipelineReg pipeline1(Clock, A, B, carryout_adder1, {24'b0, sum_adder1}, a_pipeline1, b_pipeline1, sum_pipeline1, carryout_pipeline1);
+
+    rca adder2(sum_adder2[7:0], carryOut_adder2, a_pipeline1[15:8], b_pipeline1[15:8], carryout_pipeline1);
+    pipelineReg pipeline2(Clock, a_pipeline1, b_pipeline1, carryOut_adder2, {(sum_adder2<<8)|sum_pipeline1}, a_pipeline2, b_pipeline2, sum_pipeline2, carryout_pipeline2);
+
+    rca adder3(sum_adder3[7:0], carryOut_adder3, a_pipeline2[23:16], b_pipeline2[23:16], carryout_pipeline2);
+    pipelineReg pipeline3(Clock, a_pipeline2, b_pipeline2, carryOut_adder3, {(sum_adder3<<16)|sum_pipeline2}, a_pipeline3, b_pipeline3, sum_pipeline3, carryout_pipeline3);
+
+    rca adder4(sum_adder4[7:0], carryOut_adder4, a_pipeline3[31:24], b_pipeline3[31:24], carryout_pipeline3);
+    lastPipelineReg last(Clock, carryOut_adder4, {(sum_adder4<<24)|sum_pipeline3}, S, CI);
 
 endmodule
 
-module firstPipelineReg
+module pipelineReg
 (
     input logic Clock,
     input logic[31:0] Ain, Bin,
-    input logic CI,
+    input logic carryOutInput,
+    input logic[31:0] inputSum,
     output logic[31:0] Aout, Bout,
-    output logic[31:0] S,
-    output logic CO
+    output logic[31:0] outputSum,
+    output logic carryOutOutput
 );
-    logic[7:0] adder_out;
-    logic carryOut;
-    rca adder(adder_out, carryOut, Ain[7:0], Bin[7:0], CI);
-    
     always@(posedge Clock)
     begin
         Aout <= Ain;
         Bout <= Bin;
-        S[7:0] <= adder_out;
-        CO <= carryOut;
+        carryOutOutput <= carryOutInput;
+        outputSum <= inputSum;
     end
 endmodule
 
-module secondPipelineReg
+module lastPipelineReg
 (
     input logic Clock,
-    input logic[31:0] Ain, Bin,
-    input logic CI,
-    input logic[31:0] sumIn,
-    output logic[31:0] Aout, Bout,
-    output logic[31:0] S,
-    output logic CO
+    input logic carryOutInput,
+    input logic[31:0] inputSum,
+    output logic[31:0] outputSum,
+    output logic carryOutOutput
 );
-    logic[7:0] adder_out;
-    logic carryOut;
-    rca adder(adder_out, carryOut, Ain[15:8], Bin[15:8], CI);
-    
     always@(posedge Clock)
     begin
-        Aout <= Ain;
-        Bout <= Bin;
-        S[7:0] <= sumIn[7:0];
-        S[15:8] <= adder_out;
-        CO <= carryOut;
-    end
-endmodule
-
-module thirdPipelineReg
-(
-    input logic Clock,
-    input logic[31:0] Ain, Bin,
-    input logic CI,
-    input logic[31:0] sumIn,
-    output logic[31:0] Aout, Bout,
-    output logic[31:0] S,
-    output logic CO
-);
-    logic[7:0] adder_out;
-    logic carryOut;
-    rca adder(adder_out, carryOut, Ain[23:16], Bin[23:16], CI);
-    
-    always@(posedge Clock)
-    begin
-        Aout <= Ain;
-        Bout <= Bin;
-        S[7:0] <= sumIn[7:0];
-        S[15:8] <= sumIn[15:8];
-        S[23:16] <= adder_out;
-        CO <= carryOut;
-    end
-endmodule
-
-module fourthPipelineReg
-(
-    input logic Clock,
-    input logic[31:0] Ain, Bin,
-    input logic CI,
-    input logic[31:0] sumIn,
-    output logic[31:0] S,
-    output logic CO
-);
-    logic[7:0] adder_out;
-    logic carryOut;
-    rca adder(adder_out, carryOut, Ain[31:24], Bin[31:24], CI);
-    
-    always@(posedge Clock)
-    begin
-        S[7:0] <= sumIn[7:0];
-        S[15:8] <= sumIn[15:8];
-        S[23:16] <= sumIn[23:16];
-        S[31:24] <= adder_out;
-        CO <= carryOut;
+        carryOutOutput <= carryOutInput;
+        outputSum <= inputSum;
     end
 endmodule
