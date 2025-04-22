@@ -56,28 +56,6 @@ bool SerialReciver::nextState()
 
         switch(m_currentState)
         {
-            case State::RESET:
-            {   
-                m_bitCounter = 0;
-                m_outByte = 0x0;
-                m_doneBit = 0x0;
-
-                if(reset == true)
-                {
-                    m_currentState = State::RESET;
-                    break;
-                }
-                else if(reset == false)
-                {
-                    m_currentState = State::IDLE;
-                    break;
-                }
-                else
-                {
-                    m_currentState = State::EXCEPTION;
-                    break;
-                }
-            }
             case State::IDLE:
             {
                 if(reset == true)
@@ -114,7 +92,19 @@ bool SerialReciver::nextState()
                 if(reset == true)
                 {
                     m_bitCounter = 0;
-		    m_currentState = State::IDLE;
+                    
+                    if(in == 0)
+                    {
+                        m_currentState = State::RECIEVE;
+                    }
+                    else if(in == 1)
+                    {
+                        m_currentState = State::IDLE;
+                    }
+                    else
+                    {
+                        m_currentState = State::EXCEPTION;
+                    }
                     break;
                 }
                 else if(reset == false)
