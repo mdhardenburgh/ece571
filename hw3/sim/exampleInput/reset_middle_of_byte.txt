@@ -6,8 +6,15 @@
 1, 0 // 1
 0, 0 // 2
 0, 1 // 3, and reset
-0, 0 // 4, now should be in reset state
-0, 0 // 
-0, 0 // 
-1, 0 // 
-1, 0 // 
+0, 0 // 0, start recieving again
+0, 0 // 1
+0, 0 // 2
+0, 0 // 3
+0, 0 // 4
+0, 0 // 5
+1, 0 // 6
+1, 0 // 7
+1, 0 // stop bit
+1, 0 // idle
+1, 0 // idle
+1, 0 // idle

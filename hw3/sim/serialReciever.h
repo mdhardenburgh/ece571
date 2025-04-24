@@ -2,7 +2,7 @@
 #include <string>
 #include <fstream>
 
-enum class State:uint32_t{IDLE, RECIEVE, END, RESET, EXCEPTION};
+enum class State:uint32_t{IDLE, RECIEVE, EXCEPTION};
 
 class SerialReciver
 {

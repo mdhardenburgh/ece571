@@ -92,20 +92,23 @@ bool SerialReciver::nextState()
                 if(reset == true)
                 {
                     m_bitCounter = 0;
+                    m_doneBit = 0;
                     
                     if(in == 0)
                     {
                         m_currentState = State::RECIEVE;
+                        break;
                     }
                     else if(in == 1)
                     {
                         m_currentState = State::IDLE;
+                        break;
                     }
                     else
                     {
                         m_currentState = State::EXCEPTION;
+                        break;
                     }
-                    break;
                 }
                 else if(reset == false)
                 {
@@ -117,14 +120,33 @@ bool SerialReciver::nextState()
                         m_currentState = State::RECIEVE;
                         break;
                     }
+                    else if(m_doneBit == 1)
+                    {
+                        m_doneBit = 0;
+                        m_bitCounter = 0;
+                        if(in == 0)
+                        {
+                            m_currentState = State::RECIEVE;
+                            break;
+                        }
+                        else if (in == 1)
+                        {
+                            m_currentState = State::IDLE;
+                            break;
+                        }
+                        else
+                        {
+                            m_currentState = State::EXCEPTION;
+                            break;
+                        }
+                    }
                     else
                     {
                         // have recived stop bit
                         if((in == 1) && (m_bitCounter == 8))
                         {
-                            m_bitCounter = 0;
                             m_doneBit = 1;
-                            m_currentState = State::END;
+                            m_currentState = State::RECIEVE;
                             break;
                         }
                         else if(in == 0) // have not recieved stop bit
@@ -153,39 +175,6 @@ bool SerialReciver::nextState()
                     break;
                 }
             }
-            case State::END:
-            {
-                if(reset == true)
-                {
-                    m_currentState = State::IDLE;
-                    break;
-                }
-                else if(reset == false)
-                {
-                    //m_outByte = 0;
-                    m_doneBit = 0;
-                    if(in == 0)
-                    {
-                        m_currentState = State::RECIEVE;
-                        break;
-                    }
-                    else if (in == 1)
-                    {
-                        m_currentState = State::IDLE;
-                        break;
-                    }
-                    else
-                    {
-                        m_currentState = State::EXCEPTION;
-                        break;
-                    }
-                }
-                else
-                {
-                    m_currentState = State::EXCEPTION;
-                    break;
-                }
-            } 
             case State::EXCEPTION:
             {
                 // we should never reach this state

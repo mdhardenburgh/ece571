@@ -33,7 +33,8 @@ module top;
     // S, CO
     logic[32:0] expectedResult;
     integer fails = 0;
-    integer maxInt = 2147483647;
+    integer MAX_INT = 2147483647;
+    integer MAX_REPEATS = 1000000;
 
     // 4‑deep array of 32‑bit regs
     logic [3:0][64:0] pipeline;
@@ -76,7 +77,7 @@ module top;
     initial
     begin
         $display("Begin Testbench");
-        repeat (maxInt)
+        repeat (MAX_REPEATS)
         begin
             @(posedge Clock)
             begin
@@ -87,8 +88,8 @@ module top;
                 pipeline[2] <= pipeline[1];
                 pipeline[1] <= pipeline[0];
 
-                aIter <= $urandom_range(0, maxInt);
-                bIter <= $urandom_range(0, maxInt);
+                aIter <= $urandom_range(0, MAX_INT);
+                bIter <= $urandom_range(0, MAX_INT);
                 cInIter <= $urandom_range(0, 1);
                 
                 pipeline[0] <= {aIter, bIter, cInIter};
