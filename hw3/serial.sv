@@ -1,9 +1,21 @@
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
+
 typedef enum logic[1:0] 
 {
     IDLE,
     RECIEVE
 } states_t;
 
+/**
+    @brief serial reciever module
+    @input Clock
+    @input Reset input
+    @output Done bit, start bit + 8 data bits + stop bit are recieved this goes high
+    @output BytesRecieved, output only valid when done bit is high 
+*/
 module Reciever
 (
     input logic Clock,

@@ -1,3 +1,15 @@
+/**
+    copyright (C) Matthew Hardenburgh
+    matthew@hardenburgh.io
+*/
+
+/**
+    @input Clock
+    @output Sum
+    @output CO is carry out
+    @input A, B are the addends
+    @input CI is the carry in
+*/
 module PAdder
 (
     input logic Clock,
