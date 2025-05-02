@@ -1,6 +1,6 @@
 `include "ddAlgorithm.sv"
 
-module Top #(parameter N = 32);
+module top #(parameter N = 32);
 
     import ddAlgorithm::DoubleDabble_A;
     
@@ -12,6 +12,9 @@ module Top #(parameter N = 32);
     // Output
     logic[(4*(N+2))/(3-1):0][3:0] BCD;
     logic Ready;
+
+    parameter clockCycle = 10;
+    int cycleCount = 0;
     
     DoubleDabble #(.N(N))DUT
     (
@@ -22,7 +25,7 @@ module Top #(parameter N = 32);
         .BCD(BCD),
         .Ready(Ready)
     );
-    /*
+    
     // Create free running clock
     initial
     begin
@@ -47,7 +50,8 @@ module Top #(parameter N = 32);
         end
     end
     `endif
-
+    
+    /*
     // First do a sanity check on how we expect it to work.
     task automatic test_valid_input;
         $display("test_valid_input begin");
@@ -57,12 +61,13 @@ module Top #(parameter N = 32);
     */
     initial
     begin
+        $display("begin sim");
         //`ifdef DEBUG
         //    $display("Cycle #: %0d, Reset: %b, Start: %b, V: %b, BCD: %b, Ready: %b", cycle_count, Reset, Start, V, BCD, Ready);
         //`endif
-
-        $display("V: %b, BCD: %b", V, ddAlgorithm::DoubleDabble_A (V));
-
+        assign V = 32'hFF;
+        $display("V: %0d, BCD: %b", V, ddAlgorithm::DoubleDabble_A (V));
+        $finish;
     end
 
 endmodule
