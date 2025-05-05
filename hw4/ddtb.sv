@@ -1,8 +1,6 @@
-`include "ddAlgorithm.sv"
+`include "ddTest.sv"
 
 module top #(parameter N = 32);
-
-    import ddAlgorithm::DoubleDabble_A;
     
     // Input
     logic Clock;
@@ -12,9 +10,12 @@ module top #(parameter N = 32);
     // Output
     logic[(4*(N+2))/(3-1):0][3:0] BCD;
     logic Ready;
+    int fd;
 
     parameter clockCycle = 10;
     int cycleCount = 0;
+    ref int totalFailures = 0;
+    ref int cycle_count = 0;
     
     DoubleDabble #(.N(N))DUT
     (
@@ -51,22 +52,26 @@ module top #(parameter N = 32);
     end
     `endif
     
-    /*
-    // First do a sanity check on how we expect it to work.
-    task automatic test_valid_input;
-        $display("test_valid_input begin");
-        
-        $display("test_valid_input end\n");
-    endtask
-    */
+    initial begin
+        fd = $fopen("DoubleDabbleTestSuite.txt", "w");
+        if (fd == 0) 
+        begin
+            $error("Failed to open file for logging");
+        end
+    end
+
     initial
     begin
-        $display("begin sim");
+        //fd = $fopen("DoubleDabbleTestSuite.txt", "w");
+        DoubleDabbleTest #(.m_N(N)) myTest = new(fd, clockCycle);
+        $fdisplay(fd, "Begin DoubleDabble Test Suite");
         //`ifdef DEBUG
         //    $display("Cycle #: %0d, Reset: %b, Start: %b, V: %b, BCD: %b, Ready: %b", cycle_count, Reset, Start, V, BCD, Ready);
         //`endif
-        assign V = 32'hFF;
-        $display("V: %0d, BCD: %b", V, ddAlgorithm::DoubleDabble_A (V));
+        myTest.test_all_bits_high(Reset, Start, V, BCD, Ready, cycle_count, totalFailures); 
+        //$display("V: %0d, BCD: %b", V, ddAlgorithm::DoubleDabble_A (V));
+        $fdisplay(fd, "End DoubleDabble Test Suite");
+        $fclose(fd);
         $finish;
     end
 

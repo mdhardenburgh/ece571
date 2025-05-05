@@ -1,12 +1,4 @@
-typedef enum logic[2:0] 
-{
-    IDLE,
-    DOUBLE,
-    DABBLE,
-    READY,
-    RESET,
-    EXCPETION
-} states_t;
+
 
 module DoubleDabble #(parameter N = 32)
     (
@@ -17,32 +9,17 @@ module DoubleDabble #(parameter N = 32)
         output logic[((4*(N+2))/3)-1:0] BCD,
         output logic Ready
     );
+/*
+    localparam vectorWidth = N + $rtoi($ceil((4*(N+2)/3)));
+    localparam dabbleVectorWidth = $rtoi($ceil(4*(N+2)/3));
 
-    states_t stateCounter;
+    logic[dabbleVectorWidth-1:0] emptyDabbleVector = 0;
+    logic[vectorWidth-1:0] doubleDabbleVector = {emptyDabbleVector, vector};
 
-    always_ff@(posedge Clock)
-    begin: nextStateLogic
-        if
-        case(stateCounter)
-            RESET:
-            begin
-                if(Reset)
-            end
-        endcase
-    end
-
-    always_comb@(posedge Clock)
-    begin: outputLogic
-        case(stateCounter)
-            RESET:
-            begin
-                if()
-            end
-        endcase
-    end
+*/
 endmodule
-
-module pipelineStage
+/*
+module pipelineStage #(parameter vectorWidth = 77)
 (
     input logic Clock,
     input logic Reset,
@@ -62,3 +39,21 @@ module pipelineStage
         end
     end
 endmodule
+
+module shiftAndAddThree  #(parameter vectorWidth = 77)
+(
+    input logic[N-1:0] inputVector,
+    output logic[N-1:0] outputVector,
+    
+);
+    always_comb@(inputVector)
+    begin
+        inputVector = inputVector << 1;
+
+        else
+        begin
+            outputVector = inputVector;
+        end
+    end
+endmodule
+*/
