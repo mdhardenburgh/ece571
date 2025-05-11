@@ -62,14 +62,9 @@ module top #(parameter N = 32);
 
     initial
     begin
-        //fd = $fopen("DoubleDabbleTestSuite.txt", "w");
         DoubleDabbleTest #(.m_N(N)) myTest = new(fd, clockCycle);
         $fdisplay(fd, "Begin DoubleDabble Test Suite");
-        //`ifdef DEBUG
-        //    $display("Cycle #: %0d, Reset: %b, Start: %b, V: %b, BCD: %b, Ready: %b", cycle_count, Reset, Start, V, BCD, Ready);
-        //`endif
-        myTest.test_all_bits_high(Reset, Start, V, BCD, Ready, cycle_count, totalFailures); 
-        //$display("V: %0d, BCD: %b", V, ddAlgorithm::DoubleDabble_A (V));
+        myTest.test_all_bits_high(Reset, Start, V, BCD, Ready, cycle_count); 
         $fdisplay(fd, "End DoubleDabble Test Suite");
         $fclose(fd);
         $finish;
