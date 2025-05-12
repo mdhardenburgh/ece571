@@ -1,0 +1,3 @@
+[submodule "hw4/systemVerilogTestFramework"]
+	path = hw4/systemVerilogTestFramework
+	url = git@github.com:mdhardenburgh/systemVerilogTestFramework.git
