@@ -192,42 +192,69 @@ package riscvutil;
                     SLT: instrString = "slt";
                     SLTU: instrString = "sltu";
                 endcase
-                disassembledInstr = {instrString, " ", parseRegToString(instr.register_t.rd), ", ", parseRegToString(instr.register_t.rs1), ", ", parseRegToString(instr.register_t.rs2)};
+                disassembledInstr = $sformatf("%s %s, %s, %s", instrString, parseRegToString(instr.register_t.rd), parseRegToString(instr.register_t.rs1), parseRegToString(instr.register_t.rs2));
             end
             ARITH_IMM:
             begin
                 unique0 case(instr.immediate_t.funct3)
-                    ADD: instrString = "addi";
-                    XOR: instrString = "xori";
-                    OR: instrString = "ori";
-                    AND: instrString = "andi";
-                    SLL: instrString = "slli";
+                    ADD:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, %0d", "addi", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), $signed(instr.immediate_t.imm));
+                    end
+                    XOR:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, 0x%0h", "xori", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm);
+                    end
+                    OR:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, 0x%0h", "ori", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm);
+                    end
+                    AND:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, 0x%0h", "andi", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm);
+                    end
+                    SLL:
+                    begin
+                        if(instr.immediate_t.imm[11:5] == 8'h00)
+                        begin
+                            disassembledInstr = $sformatf("%s %s, %s, %0d", "slli", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm[4:0]);
+                        end
+                        else
+                            $fatal("improper shift amount: (%0d)", $signed(instr.immediate_t.imm));
+                    end
                     SRLA:
                     begin
                         if(instr.immediate_t.imm[11:5] == 8'h00)
                         begin
-                            instrString = "srli";
+                            disassembledInstr = $sformatf("%s %s, %s, %0d", "srli", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm[4:0]);
                         end
                         else if(instr.immediate_t.imm[11:5] == 8'h20)
                         begin
-                            instrString = "srai";
+                            disassembledInstr = $sformatf("%s %s, %s, %0d", "srai", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), instr.immediate_t.imm[4:0]);
                         end
+                        else
+                            $fatal("improper shift amount: (%0d)", $signed(instr.immediate_t.imm));
                     end
-                    SLT: instrString = "slti";
-                    SLTU: instrString = "sltui";
+                    SLT:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, %0d", "slti", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), $signed(instr.immediate_t.imm));
+                    end
+                    SLTU:
+                    begin
+                        disassembledInstr = $sformatf("%s %s, %s, %0d", "sltiu", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), $unsigned(instr.immediate_t.imm));
+                    end
                 endcase
-                disassembledInstr = {instrString, " ", parseRegToString(instr.immediate_t.rd), ", ", parseRegToString(instr.immediate_t.rs1), ", ", $signed(instr.immediate_t.imm)};
             end
-            LOAD:
+            LOAD: // the byte is unsigned
             begin
                 unique0 case(instr.immediate_t.funct3)
-                    LB: instrString = "lb";
-                    LH: instrString = "lh";
-                    LW: instrString = "lw";
-                    LBU: instrString = "lbu";
-                    LHU: instrString = "lhu";
+                    LB: instrString = "lb"; 
+                    LH: instrString = "lh"; 
+                    LW: instrString = "lw"; 
+                    LBU: instrString = "lbu"; 
+                    LHU: instrString = "lhu"; 
                 endcase
-                disassembledInstr = {instrString, " ", parseRegToString(instr.immediate_t.rd), ", ", $signed(instr.immediate_t.imm), "(", parseRegToString(instr.immediate_t.rs1), ")"};
+                disassembledInstr = $sformatf("%s %s, %0d(%s)", instrString, parseRegToString(instr.immediate_t.rd), $signed(instr.immediate_t.imm), parseRegToString(instr.immediate_t.rs1));
             end
             STORE:
             begin
@@ -236,39 +263,35 @@ package riscvutil;
                     SH: instrString = "sh";
                     SW: instrString = "sw";
                 endcase
-                disassembledInstr = {instrString, " ", parseRegToString(instr.store_t.rs1), ", ", $signed({instr.store_t.upperImm, instr.store_t.lowerImm}), "(", parseRegToString(instr.store_t.rs2), ")"};
+                disassembledInstr = $sformatf("%s %s, %0d(%s)", instrString, parseRegToString(instr.store_t.rs2), $signed({instr.store_t.upperImm, instr.store_t.lowerImm}), parseRegToString(instr.store_t.rs1));
             end
-            BRANCH:
+            BRANCH: // the compares are unsigned
             begin
                 unique0 case(instr.branch_t.funct3)
-                    BEQ: instrString = "beq";
-                    BNE: instrString = "bne";
-                    BLT: instrString = "blt";
-                    BGE: instrString = "bge";
-                    BLTU: instrString = "bltu";
-                    BGEU: instrString = "bgeu";
+                    BEQ: instrString = "beq"; 
+                    BNE: instrString = "bne"; 
+                    BLT: instrString = "blt"; 
+                    BGE: instrString = "bge"; 
+                    BLTU: instrString = "bltu"; 
+                    BGEU: instrString = "bgeu"; 
                 endcase
-                disassembledInstr = {instrString, " ", parseRegToString(instr.store_t.rs1), ", ", parseRegToString(instr.store_t.rs2), ", .", $signed({instr.branch_t.imm12, instr.branch_t.imm11, instr.branch_t.imm10To5, instr.branch_t.imm4to1})};
+                disassembledInstr = $sformatf("%s %s, %s, .%0d", instrString, parseRegToString(instr.branch_t.rs2), parseRegToString(instr.branch_t.rs1), $signed({instr.branch_t.imm12, instr.branch_t.imm11, instr.branch_t.imm10To5, instr.branch_t.imm4to1, 1'b0}));
             end
             JAL:
             begin
-                instrString = "jal";
-                disassembledInstr = {instrString, " ", parseRegToString(instr.jump_t.rsd), ", .", $signed({instr.jump_t.imm20, instr.jump_t.imm19to12, instr.jump_t.imm11, instr.jump_t.imm10To1})};
+                disassembledInstr = $sformatf("%s %s, .%0d", "jal", parseRegToString(instr.jump_t.rd), $signed({instr.jump_t.imm20, instr.jump_t.imm19to12, instr.jump_t.imm11, instr.jump_t.imm10To1, 1'b0}));
             end
             JALR: 
             begin 
-                instrString = "jalr";
-                disassembledInstr = {instrString, " ", parseRegToString(instr.immediate_t.rd), ", ", $signed(instr.immediate_t.imm), "(", parseRegToString(instr.immediate_t.rs1), ")"};
+                disassembledInstr = $sformatf("%s %s, %s, %0d", "jalr", parseRegToString(instr.immediate_t.rd), parseRegToString(instr.immediate_t.rs1), $signed(instr.immediate_t.imm));
             end
             LUI:
             begin
-                instrString = "lui";
-                disassembledInstr = {instrString, " ", parseRegToString(instr.immediate_t.rd), ", ", $signed(instr.immediate_t.imm), "(", parseRegToString(instr.immediate_t.rs1), ")"};
+                disassembledInstr = $sformatf("%s %s, %0d", "lui", parseRegToString(instr.upperImmediate_t.rd), instr.upperImmediate_t.imm);
             end
             AUIPC:
             begin
-                instrString = "auipc";
-                disassembledInstr = {instrString, " ", parseRegToString(instr.upperImmediate_t.rd), ", ", $signed(instr.immediate_t.imm)};
+                disassembledInstr = $sformatf("%s %s, %0d", "auipc", parseRegToString(instr.upperImmediate_t.rd), instr.upperImmediate_t.imm);
             end
         endcase
         return disassembledInstr;
@@ -290,7 +313,7 @@ package riscvutil;
             T1:   retVal = "t1";
             T2:   retVal = "t2";
             FP:   retVal = "fp";
-            S1:   retVal = "S0";
+            S1:   retVal = "s1";
             A0:   retVal = "a0";
             A1:   retVal = "a1";
             A2:   retVal = "a2";

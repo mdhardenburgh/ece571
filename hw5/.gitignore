@@ -1,0 +1,5 @@
+*.jou
+*.log
+xsim.dir/*
+*.o
+*.hex

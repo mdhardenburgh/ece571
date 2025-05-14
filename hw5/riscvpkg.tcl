@@ -5,9 +5,9 @@
 # use xvlog, xelab and xsim for simulation
 # read_verilog, synth_design for FPGA implemention
 
-exec xvlog -sv riscvpkg.sv top.sv --define DEBUG=1
+exec xvlog -sv riscvpkg.sv top.sv
 # lint files
-exec xelab top --define DEBUG=1
+exec xelab top -generic_top "PARSE_ASSEMBLY=1" -generic_top "FILENAME=\"test\""
 
 exec xsim top -runall 
 
