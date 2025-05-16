@@ -1,3 +1,5 @@
 *.jou
 xsim.dir
 DoubleDabbleTestSuite.txt
+*.pb
+*.log
