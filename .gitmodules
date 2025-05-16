@@ -1,0 +1,3 @@
+[submodule "svTest"]
+	path = svTest
+	url = git@github.com:mdhardenburgh/svTest.git
