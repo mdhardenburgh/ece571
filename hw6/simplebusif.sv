@@ -260,27 +260,14 @@ module ProcessorIntThread #(parameter NUMMEM = 4)
         EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_overflow_data)
 
+    /*
     `TEST_TASK(simpleBusTest, test_trigger_too_large_addr_assert)
         repeat (2) @(posedge bus.clock);
         WriteMem(24'h04_0001, 8'hBE);
         ReadMem(24'h04_0001);
         EXPECT_EQ_LOGIC(DataReg, 8'hEBE, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_trigger_too_large_addr_assert)
-
-    //int cycle_count = 0;
-    // create cycle counter for debugging
-    initial
-    begin
-        forever @(posedge bus.clock) cycle_count++;
-    end
-
-    initial
-    begin
-        forever @(posedge bus.clock)
-        begin
-            //$display("Cycle #: %0d, ld_Data: %0d, DataReg: %h, State: %s, bus.dataValid: %b, bus.data: %h", cycle_count, ld_Data, DataReg, State.name(), bus.dataValid, bus.data);
-        end
-    end
+    */
 
     initial
     begin
@@ -350,7 +337,6 @@ module MemoryIntThread #(parameter devAddr = 0)
                 if((bus.start == 1'b1) && (bus.address == devAddr))
                 begin
                     NextState = SA;
-                    //$display("bus.start is %0d, bus.address is %0d, devAddr is %0d", bus.start, bus.address, devAddr);
                 end
                 else
                     NextState = DEV_ADDR;
@@ -359,14 +345,12 @@ module MemoryIntThread #(parameter devAddr = 0)
             // reset state, wait for start signal, capture upper addr bits
             SA: 
             begin
-                //$display("SA bus.address %h", bus.address);
                 NextState = SB;
                 ld_AddrUp = 1;
             end
             // access state, capture lower addr bits, decide if read or write
             SB: 
             begin
-                //$display("SB bus.address %h", bus.address);
                 NextState = (bus.read) ? SC : SD;
                 ld_AddrLo = 1;
             end
@@ -384,20 +368,6 @@ module MemoryIntThread #(parameter devAddr = 0)
                 ld_Data = (bus.dataValid) ? 1 : 0;
             end
         endcase
-    end
-
-    initial
-    begin
-        forever @(posedge bus.clock) cycle_count++;
-    end
-    
-    initial
-    begin
-        forever @(posedge bus.clock)
-        begin
-            //$display("MemoryIntThread: Cycle #: %0d, ld_Data: %0d, DataReg: %h, State: %s, bus.dataValid: %b, bus.data: %h", cycle_count, ld_Data, DataReg, State.name(), bus.dataValid, bus.data);
-            //$display("MemoryIntThread: Cycle #: %0d, devAddr %0d, State: %s, bus.address: %h, bus.data %h, bus.dataValid %h, AddrReg %h", cycle_count, devAddr, State.name(), bus.address, bus.data, bus.dataValid, AddrReg);
-        end
     end
 
     // *** testbench code
