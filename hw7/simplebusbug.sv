@@ -31,7 +31,7 @@ module top;
     logic resetN;
     logic clock;
 
-    //`ifdef DEBUG
+    `ifdef DEBUG
     initial
     begin
         #RESETDURATION resetN = 1;
@@ -39,7 +39,7 @@ module top;
         $display("		  time access start read dValid addr data\n");
         $monitor($time, "   %b     %b     %b    %b   %h    %h", Processor.access, SB.start, SB.read, SB.dataValid, SB.address, SB.data);
     end
-    //`endif
+    `endif
 
     SimpleBus SB(.*);
     ClockGenerator ClockGen(.*);
@@ -163,8 +163,6 @@ interface SimpleBus(input logic clock, resetN);
     `CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
         @(posedge clock)
         disable iff (!resetN)
-        //$rose(start) ##1 $fell(start) ##[2:7] !$isunknown(data) && (dataValid === 1'b1) |=> $rose(start) ##1 (read === 1'b0);
-        //$rose(start) ##1 (read === 1'b0) |> $rose(start) ##1 $fell(start) ##[2:7] !$isunknown(data) && (dataValid === 1'b1);
         $rose(start) ##1 (read === 1'b0) |=> ##[2:7] !$isunknown(data) && (dataValid === 1'b1);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
 
@@ -279,19 +277,64 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
         repeat (2) @(posedge bus.clock);
         WriteMem(16'h0406, 8'hDC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_write_then_read)
-/*
+
     `TEST_TASK(simpleBusTest, test_overwrite_same_spot)
         repeat (2) @(posedge bus.clock);
         WriteMem(16'h0406, 8'hDC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
         WriteMem(16'h0406, 8'hAC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hAC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hAC, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_overwrite_same_spot)
-*/
+
+    `TEST_TASK(simpleBusTest, test_this_is_not_a_good_test)
+        repeat (2) @(posedge bus.clock);
+        // Note this is from the textbook but is *not* a good test!!
+        WriteMem(16'h0406, 8'hDC);
+        ReadMem(16'h0406);
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        WriteMem(16'h0407, 8'hAB);
+        ReadMem(16'h0406);
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        ReadMem(16'h0407);
+        EXPECT_EQ_LOGIC(DataReg, 8'hAB, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_this_is_not_a_good_test)
+
+    `TEST_TASK(simpleBusTest, test_write_high)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'hFFFF, 8'h1A);
+        ReadMem(16'hFFFF);
+        EXPECT_EQ_LOGIC(DataReg, 8'h1A, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_high)
+
+    `TEST_TASK(simpleBusTest, test_write_low)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_low)
+    
+    `TEST_TASK(simpleBusTest, test_overflow_addr)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h10001, 8'hBE);
+        ReadMem(16'h10001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_overflow_addr)
+
+    `TEST_TASK(simpleBusTest, test_overflow_data)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hEBE, "", "hex");
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_overflow_data)
+
     initial
     begin
         testFramework::TestManager::runAllTasks();

@@ -46,8 +46,6 @@ module top;
     ProcessorIntThread Processor(SB.ProcessorPort);
     MemoryIntThread Memory(SB.MemoryPort);
 
-    //bind ProcessorIntThread simpleBus_CONCURENT_ASSERTIONS ca(.clock(SB.clock), .resetN(SB.resetN), .data(SB.data), .address(SB.address), .start(SB.start), .read(SB.read), .dataValid(SB.dataValid));
-
     initial
     begin
         for (int i = 0; i < 16'hFFFF; i++)
@@ -115,36 +113,70 @@ interface SimpleBus(input logic clock, resetN);
             end
 
     */
+    sequence startPulse;
+        @(posedge clock)
+        $rose(start) ##1 $fell(start);
+    endsequence
+
+    sequence transaction;
+        @(posedge clock)
+        !$rose(start) ##1 !$fell(start) ##[1:$] !$rose(dataValid) ##1 !$fell(dataValid);
+    endsequence
+
+    
     `CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
         @(posedge clock)
         disable iff (!resetN)
-        (start==1'b1) |-> !$isunknown(address) ##1 !$isunknown(address);
+        (start===1'b1) |-> !$isunknown(address) ##1 !$isunknown(address);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, data_valid_asserted_data_lines_hold_valid_data)
         @(posedge clock)
         disable iff (!resetN)
-        (dataValid==1'b1) |-> !$isunknown(data);
+        (dataValid===1'b1) |-> !$isunknown(data);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, data_valid_asserted_data_lines_hold_valid_data)
 
-    `CONCURENT_PROPERTY_ERROR(simpleBus, start_read_and_dataValid_asserted_for_only_one_cycle)
+    `CONCURENT_PROPERTY_ERROR(simpleBus, start_asserted_for_only_one_cycle)
         @(posedge clock)
         disable iff (!resetN)
-        (start == 1'b1) && (read == 1'b1) && (dataValid == 1'b1) ##1 (start == 1'b0) && (read == 1'b0) && (dataValid == 1'b0);
-    `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_read_and_dataValid_asserted_for_only_one_cycle)
+        (start === 1'b1) |-> ##1 (start === 1'b0);
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_asserted_for_only_one_cycle)
+
+    `CONCURENT_PROPERTY_ERROR(simpleBus, read_asserted_for_only_one_cycle)
+        @(posedge clock)
+        disable iff (!resetN)
+        (read === 1'b1) |-> ##1 (read === 1'b0);
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_asserted_for_only_one_cycle)
+
+    `CONCURENT_PROPERTY_ERROR(simpleBus, dataValid_asserted_for_only_one_cycle)
+        @(posedge clock)
+        disable iff (!resetN)
+        (dataValid === 1'b1) |-> ##1 (dataValid === 1'bz);
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, dataValid_asserted_for_only_one_cycle)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, read_completes_in_2_to_10_cycles)
         @(posedge clock)
         disable iff (!resetN)
-        (read == 1'b1) ##[2:10] (!$isunknown(data) && (dataValid == 1'b1));
+        $rose(start) ##1 $rose(read) |=> ##[2:10] !$isunknown(data) && (dataValid === 1'b1);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_completes_in_2_to_10_cycles)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
         @(posedge clock)
         disable iff (!resetN)
-        (read == 1'b0) ##[2:7] (!$isunknown(data) && (dataValid == 1'b1));
+        $rose(start) ##1 (read === 1'b0) |=> ##[2:7] !$isunknown(data) && (dataValid === 1'b1);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
 
+    `CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_transaction)
+        @(posedge clock)
+        disable iff (!resetN)
+        startPulse |-> !$rose(start) throughout transaction;
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_transaction)
+
+    `CONCURENT_PROPERTY_ERROR(simpleBus, read_only_asserted_after_start)
+        @(posedge clock)
+        disable iff (!resetN)
+        $rose(read) |-> ($past(start) == 1'b1);
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_only_asserted_after_start)
 endinterface
 
 module ProcessorIntThread(SimpleBus.ProcessorPort bus);
@@ -164,7 +196,9 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
     always_comb
     begin
         if (en_AddrLo) bus.address = AddrReg[7:0];
+        //if (en_AddrLo) bus.address = 'bz;
         else if (en_AddrUp) bus.address = AddrReg[15:8];
+        //else if (en_AddrUp) bus.address = 'bz;
         else bus.address = 'bz;
     end
         
@@ -213,16 +247,18 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
     begin
         access <= 1;
         doRead <= 0;
-        wDataRdy <= 1;
+        wDataRdy <= 0;
         AddrReg <= Avalue;
         DataReg <= Dvalue;
-        @(posedge bus.clock) access <= 0;
+        @(posedge bus.clock) 
+        access <= 0;
+        repeat (4) @(posedge bus.clock);
+        wDataRdy <= 1;
         @(posedge bus.clock);
         wait (State == MA); // *** shouldn't do this
         repeat (2) @(posedge bus.clock);
     end
     endtask
-
 
     task ReadMem(input [15:0] Avalue);   
     begin
@@ -241,22 +277,67 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
         repeat (2) @(posedge bus.clock);
         WriteMem(16'h0406, 8'hDC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_write_then_read)
 
     `TEST_TASK(simpleBusTest, test_overwrite_same_spot)
         repeat (2) @(posedge bus.clock);
         WriteMem(16'h0406, 8'hDC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
         WriteMem(16'h0406, 8'hAC);
         ReadMem(16'h0406);
-        //EXPECT_EQ_LOGIC(DataReg, 8'hAC, "", "hex");
+        EXPECT_EQ_LOGIC(DataReg, 8'hAC, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_overwrite_same_spot)
+
+    `TEST_TASK(simpleBusTest, test_this_is_not_a_good_test)
+        repeat (2) @(posedge bus.clock);
+        // Note this is from the textbook but is *not* a good test!!
+        WriteMem(16'h0406, 8'hDC);
+        ReadMem(16'h0406);
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        WriteMem(16'h0407, 8'hAB);
+        ReadMem(16'h0406);
+        EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
+        ReadMem(16'h0407);
+        EXPECT_EQ_LOGIC(DataReg, 8'hAB, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_this_is_not_a_good_test)
+
+    `TEST_TASK(simpleBusTest, test_write_high)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'hFFFF, 8'h1A);
+        ReadMem(16'hFFFF);
+        EXPECT_EQ_LOGIC(DataReg, 8'h1A, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_high)
+
+    `TEST_TASK(simpleBusTest, test_write_low)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_low)
+    
+    `TEST_TASK(simpleBusTest, test_overflow_addr)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h10001, 8'hBE);
+        ReadMem(16'h10001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_overflow_addr)
+
+    `TEST_TASK(simpleBusTest, test_overflow_data)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hEBE, "", "hex");
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_overflow_data)
 
     initial
     begin
-        testFramework::TestManager::runAllTasks();  
+        testFramework::TestManager::runAllTasks();
         $finish;
     end
 endmodule
