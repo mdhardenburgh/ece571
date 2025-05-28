@@ -31,7 +31,7 @@ module top;
     logic resetN;
     logic clock;
 
-    `ifdef DEBUG
+    //`ifdef DEBUG
     initial
     begin
         #RESETDURATION resetN = 1;
@@ -39,7 +39,7 @@ module top;
         $display("		  time access start read dValid addr data\n");
         $monitor($time, "   %b     %b     %b    %b   %h    %h", Processor.access, SB.start, SB.read, SB.dataValid, SB.address, SB.data);
     end
-    `endif
+    //`endif
 
     SimpleBus SB(.*);
     ClockGenerator ClockGen(.*);
@@ -113,60 +113,72 @@ interface SimpleBus(input logic clock, resetN);
             end
 
     */
-    /*
-    `define writeSequence \
-    (start == 1'b1 && !$isunknown(address) && $isunknown(data)) \
-    ##1 (start == 1'b0 && read == 1'b0 && !$isunknown(address) && $isunknown(data)) \
-    ##[2:7] ($isunknown(address) && !$isunknown(data) && dataValid==1'b1)
-    */
+    sequence startPulse;
+        @(posedge clock)
+        $rose(start) ##1 $fell(start);
+    endsequence
+
+    sequence transaction;
+        @(posedge clock)
+        !$rose(start) ##1 !$fell(start) ##[1:$] !$rose(dataValid) ##1 !$fell(dataValid);
+    endsequence
+
+    
     `CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
         @(posedge clock)
         disable iff (!resetN)
-        (start==1'b1) |-> !$isunknown(address) ##1 !$isunknown(address);
+        (start===1'b1) |-> !$isunknown(address) ##1 !$isunknown(address);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, data_valid_asserted_data_lines_hold_valid_data)
         @(posedge clock)
         disable iff (!resetN)
-        (dataValid==1'b1) |-> !$isunknown(data);
+        (dataValid===1'b1) |-> !$isunknown(data);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, data_valid_asserted_data_lines_hold_valid_data)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, start_asserted_for_only_one_cycle)
         @(posedge clock)
         disable iff (!resetN)
-        (start == 1'b1) |-> ##1 (start == 1'b0);
+        (start === 1'b1) |-> ##1 (start === 1'b0);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_asserted_for_only_one_cycle)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, read_asserted_for_only_one_cycle)
         @(posedge clock)
         disable iff (!resetN)
-        (read == 1'b1) |-> ##1 (read == 1'b0);
+        (read === 1'b1) |-> ##1 (read === 1'b0);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_asserted_for_only_one_cycle)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, dataValid_asserted_for_only_one_cycle)
         @(posedge clock)
         disable iff (!resetN)
-        (dataValid == 1'b1) |-> ##1 (dataValid == 1'b0);
+        (dataValid === 1'b1) |-> ##1 (dataValid === 1'bz);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, dataValid_asserted_for_only_one_cycle)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, read_completes_in_2_to_10_cycles)
         @(posedge clock)
         disable iff (!resetN)
-        (read == 1'b1) ##[2:10] (!$isunknown(data) && (dataValid == 1'b1));
+        $rose(start) ##1 $rose(read) |=> ##[2:10] !$isunknown(data) && (dataValid === 1'b1);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_completes_in_2_to_10_cycles)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
         @(posedge clock)
         disable iff (!resetN)
-        (read == 1'b0) ##[2:7] (!$isunknown(data) && (dataValid == 1'b1));
+        //$rose(start) ##1 $fell(start) ##[2:7] !$isunknown(data) && (dataValid === 1'b1) |=> $rose(start) ##1 (read === 1'b0);
+        //$rose(start) ##1 (read === 1'b0) |> $rose(start) ##1 $fell(start) ##[2:7] !$isunknown(data) && (dataValid === 1'b1);
+        $rose(start) ##1 (read === 1'b0) |=> ##[2:7] !$isunknown(data) && (dataValid === 1'b1);
     `END_CONCURENT_PROPERTY_ERROR(simpleBus, write_completes_in_2_to_7_cycles)
-/*
-    `CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_write)
+
+    `CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_transaction)
         @(posedge clock)
         disable iff (!resetN)
-        (start == 1'b1) ##1 (start == 1'b0) throughout `writeSequence;
-    `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_write)
-    */
+        startPulse |-> !$rose(start) throughout transaction;
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, start_only_asserted_once_per_transaction)
+
+    `CONCURENT_PROPERTY_ERROR(simpleBus, read_only_asserted_after_start)
+        @(posedge clock)
+        disable iff (!resetN)
+        $rose(read) |-> ($past(start) == 1'b1);
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, read_only_asserted_after_start)
 endinterface
 
 module ProcessorIntThread(SimpleBus.ProcessorPort bus);
@@ -237,10 +249,13 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
     begin
         access <= 1;
         doRead <= 0;
-        wDataRdy <= 1;
+        wDataRdy <= 0;
         AddrReg <= Avalue;
         DataReg <= Dvalue;
-        @(posedge bus.clock) access <= 0;
+        @(posedge bus.clock) 
+        access <= 0;
+        repeat (4) @(posedge bus.clock);
+        wDataRdy <= 1;
         @(posedge bus.clock);
         wait (State == MA); // *** shouldn't do this
         repeat (2) @(posedge bus.clock);
@@ -263,7 +278,7 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
     `TEST_TASK(simpleBusTest, test_write_then_read)
         repeat (2) @(posedge bus.clock);
         WriteMem(16'h0406, 8'hDC);
-        //ReadMem(16'h0406);
+        ReadMem(16'h0406);
         //EXPECT_EQ_LOGIC(DataReg, 8'hDC, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_write_then_read)
 /*
@@ -279,7 +294,7 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
 */
     initial
     begin
-        testFramework::TestManager::runAllTasks();  
+        testFramework::TestManager::runAllTasks();
         $finish;
     end
 endmodule
@@ -353,7 +368,7 @@ module MemoryIntThread(SimpleBus.MemoryPort bus);
         memDataAvail <= 0;
         if (State == SC)
         begin
-            delay = 2;
+            delay = $random;
             repeat (2 + delay)
                 @(posedge bus.clock);
             memDataAvail <= 1;
