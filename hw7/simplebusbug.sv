@@ -105,7 +105,7 @@ interface SimpleBus(input logic clock, resetN);
 
         `define END_CONCURENT_PROPERTY_ERROR(SUITE, NAME) \
         endproperty \
-        SUITE``_``NAME``_CONCURENT_PROPERTY_ERROR_A``: assert property(SUITE``_``NAME``_CONCURENT_PROPERTY_ERROR_P``) \
+        RIGHT here is where I label the assert as per Mark's instructions. SUITE``_``NAME``_CONCURENT_PROPERTY_ERROR_A``: assert property(SUITE``_``NAME``_CONCURENT_PROPERTY_ERROR_P``) \
             else \
             begin \
                 $error("%s.%s_CONCURENT_ASSERTION FAILED in test: %s", `"SUITE`", `"NAME`", TestManager::getConcurrentTask()); \
@@ -124,11 +124,11 @@ interface SimpleBus(input logic clock, resetN);
     endsequence
 
     
-    `CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
+    `CONCURENT_PROPERTY_ERROR(simpleBus, address_valid_for_cycles_in_which_start_is_asserted_and_next)
         @(posedge clock)
         disable iff (!resetN)
         (start===1'b1) |-> !$isunknown(address) ##1 !$isunknown(address);
-    `END_CONCURENT_PROPERTY_ERROR(simpleBus, addres_valid_for_cycles_in_which_start_is_asserted_and_next)
+    `END_CONCURENT_PROPERTY_ERROR(simpleBus, address_valid_for_cycles_in_which_start_is_asserted_and_next)
 
     `CONCURENT_PROPERTY_ERROR(simpleBus, data_valid_asserted_data_lines_hold_valid_data)
         @(posedge clock)
@@ -190,15 +190,26 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
 
     enum {MA,MB,MC,MD} State, NextState;
 
+    `ifdef cause_data_valid_asserted_data_lines_hold_valid_data_assert
+    assign bus.data = (en_Data) ? 'bx : 'bz;
+    `else
     assign bus.data = (en_Data) ? DataReg : 'bz;
+    `endif
+    `ifdef cause_dataValid_asserted_for_only_one_cycle_assert
+    assign bus.dataValid = (NextState == MA) ? 1'b1 : 1'bz;
+    `else
     assign bus.dataValid = (State == MD) ? dv : 1'bz;
+    `endif
 
     always_comb
     begin
+        `ifdef cause_address_valid_for_cycles_in_which_start_is_asserted_and_next_assert
+        if (en_AddrLo) bus.address = 'bz;
+        else if (en_AddrUp) bus.address = 'bz;
+        `else
         if (en_AddrLo) bus.address = AddrReg[7:0];
-        //if (en_AddrLo) bus.address = 'bz;
         else if (en_AddrUp) bus.address = AddrReg[15:8];
-        //else if (en_AddrUp) bus.address = 'bz;
+        `endif
         else bus.address = 'bz;
     end
         
@@ -227,15 +238,24 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
                 en_AddrUp = (access) ? 1 : 0;
                 end
             MB:	begin
+                `ifdef cause_start_asserted_for_only_one_cycle_assert
+                bus.start = 1;
+                `endif
                 NextState = (doRead) ? MC : MD;
                 en_AddrLo = 1;
                 bus.read = (doRead) ? 1 : 0;
                 end
             MC:	begin
+                `ifdef cause_read_asserted_for_only_one_cycle_assert
+                bus.read = 1;
+                `endif
                 NextState = (bus.dataValid) ? MA : MC;
                 ld_Data = (bus.dataValid) ? 1 : 0;
                 end
             MD:	begin
+                `ifdef cause_start_only_asserted_once_per_transaction_assert
+                bus.start = 1;
+                `endif
                 NextState = (wDataRdy) ? MA : MD;
                 en_Data = (wDataRdy) ? 1 : 0;
                 dv = (wDataRdy) ? 1 : 0;
@@ -250,9 +270,13 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
         wDataRdy <= 0;
         AddrReg <= Avalue;
         DataReg <= Dvalue;
-        @(posedge bus.clock) 
+        @(posedge bus.clock)
         access <= 0;
+        `ifdef cause_write_completes_in_2_to_7_cycles_assert
+        repeat (1) @(posedge bus.clock);
+        `else
         repeat (4) @(posedge bus.clock);
+        `endif
         wDataRdy <= 1;
         @(posedge bus.clock);
         wait (State == MA); // *** shouldn't do this
@@ -266,7 +290,8 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
         doRead <= 1;
         wDataRdy <= 0;
         AddrReg <= Avalue;
-        @(posedge bus.clock) access <= 0;
+        @(posedge bus.clock);
+        access <= 0;
         @(posedge bus.clock);
         wait (State == MA); // *** shouldn't do this
         repeat (2) @(posedge bus.clock);
@@ -334,6 +359,22 @@ module ProcessorIntThread(SimpleBus.ProcessorPort bus);
         ReadMem(16'h0001);
         EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
     `END_TEST_TASK(simpleBusTest, test_overflow_data)
+
+    `TEST_TASK(simpleBusTest, test_write_then_write_again_to_same_addr_then_read_first)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        WriteMem(16'h0001, 8'hA1);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hA1, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_then_write_again_to_same_addr_then_read_first)
+
+    `TEST_TASK(simpleBusTest, test_write_then_write_to_diiferent_addr_then_read_first)
+        repeat (2) @(posedge bus.clock);
+        WriteMem(16'h0001, 8'hBE);
+        WriteMem(16'h000F, 8'hA1);
+        ReadMem(16'h0001);
+        EXPECT_EQ_LOGIC(DataReg, 8'hBE, "", "hex");
+    `END_TEST_TASK(simpleBusTest, test_write_then_write_to_diiferent_addr_then_read_first)
 
     initial
     begin
@@ -403,7 +444,7 @@ module MemoryIntThread(SimpleBus.MemoryPort bus);
                 end
         endcase
     end
-        
+    
     // *** testbench code
     always @(State)
     begin
@@ -412,7 +453,11 @@ module MemoryIntThread(SimpleBus.MemoryPort bus);
         if (State == SC)
         begin
             delay = $random;
+            `ifdef cause_read_completes_in_2_to_10_cycles_assert
+            repeat (11)
+            `else
             repeat (2 + delay)
+            `endif
                 @(posedge bus.clock);
             memDataAvail <= 1;
         end

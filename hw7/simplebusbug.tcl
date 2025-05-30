@@ -4,6 +4,7 @@
 # vivado -mode batch -source simplebusbug.tcl
 # use xvlog, xelab and xsim for simulation
 # read_verilog, synth_design for FPGA implemention
+# # exec xvlog -sv simplebus.sv -d DEBUG=1
 
 exec xvlog -sv simplebusbug.sv
 # lint files
