@@ -20,62 +20,66 @@ end
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, request_vector_never_has_invalid_bits)
     @(posedge clock)
     !$isunknown(r);
-    //!$isunknown(A) && !$isunknown(B) && !$isunknown(CI) |-> ##STAGES !$isunknown(S) && !$isunknown(CO);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, request_vector_never_has_invalid_bits)
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, request_vector_never_has_invalid_bits)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, except_reset_grant_never_has_invalid_bits)
     @(posedge clock)
-    disable iff (!reset)
+    disable iff (reset)
     !$isunknown(g);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, except_reset_grant_never_has_invalid_bits)
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, except_reset_grant_never_has_invalid_bits)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, arbiter_always_produces_grant_in_one_cycle)
     @(posedge clock)
-    disable iff (!reset)
-    !$isunknown(r) |=> !$isunknown(g);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, arbiter_always_produces_grant_in_one_cycle)
+    disable iff (reset)
+    !$isunknown(r) |=> ##1 !$isunknown(g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, arbiter_always_produces_grant_in_one_cycle)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, never_more_than_one_grant)
     @(posedge clock)
-    disable iff (!reset)
-    (r >= 1) |=> (checkIfOneHot(g) == 1);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, never_more_than_one_grant)
+    disable iff (reset)
+    (r >= 1) |-> ##1 $onehot(g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, never_more_than_one_grant)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, single_requestor_always_recieves_grant)
     @(posedge clock)
-    disable iff (!reset)
-    (checkIfOneHot(r) == 1) |=> ($past(r) == g);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, single_requestor_always_recieves_grant)
+    disable iff (reset)
+    $onehot(r) |-> ##1 ($past(r) == g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, single_requestor_always_recieves_grant)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, did_not_request_grant_grant_not_given)
     @(posedge clock)
-    disable iff (!reset)
-    checkIfNotReqGrantGiven($past(r), g) == 1'b1;
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, did_not_request_grant_grant_not_given)
+    disable iff (reset)
+    (checkIfNotReqGrantGiven($past(r), g) == 1'b0);
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, did_not_request_grant_grant_not_given)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, agent_contine_to_request_grant_agent_continue_to_get_grant)
     @(posedge clock)
-    disable iff (!reset)
+    disable iff (reset)
     // if had grant before, requesting it again, it should be given grant again
-    (checkIfRequestorHadGrantBefore(r, $past(g)) == 1'b1) |=>  (checkIfRequestorHadGrantBefore($past(r), g) == 1'b1);
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, agent_contine_to_request_grant_agent_continue_to_get_grant);
+    (checkIfRequestorHadGrantBefore(r, $past(g)) == 1'b1) |=>  ##1 (checkIfRequestorHadGrantBefore($past(r), g) == 1'b1);
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, agent_contine_to_request_grant_agent_continue_to_get_grant);
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, after_grant_agent_does_not_contine_to_request_after_256_cycles)
     @(posedge clock)
-    disable iff (!reset)
+    disable iff (reset)
     checkGrantVector(grants) == 0;
-`END_CONCURENT_PROPERTY_ERROR(ArbiterAssertions, after_grant_agent_does_not_contine_to_request_after_256_cycles)
-
-function automatic int checkIfOneHot(logic[AGENTS-1:0] vector);
-    int sum = 0;
-    
-    for(int iIter = 0; iIter < AGENTS; iIter++)
-    begin
-        sum = sum + vector[iIter];
-    end
-
-    return sum;
-endfunction
+`END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, after_grant_agent_does_not_contine_to_request_after_256_cycles)
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+`END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 function automatic int checkIfNotReqGrantGiven(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0] gVector);
     int true = 0;
@@ -87,10 +91,9 @@ function automatic int checkIfNotReqGrantGiven(logic[AGENTS-1:0] rVector, logic[
             true = 1;
             break;
         end
-        return true;
     end
+    return true;
 endfunction
-
 
 // if had grant before, requesting it again, it should be given grant again
 function automatic int checkIfRequestorHadGrantBefore(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0] gVector);
@@ -103,8 +106,8 @@ function automatic int checkIfRequestorHadGrantBefore(logic[AGENTS-1:0] rVector,
             true = 1;
             break;
         end
-        return true;
     end
+    return true;
 endfunction
 
 function automatic void updateGrantVector(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0]gVector, ref logic[9:0] grants[AGENTS-1:0]);

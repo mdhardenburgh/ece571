@@ -22,6 +22,11 @@ module Arbiter #(parameter AGENTS = 8)
 
     logic[AGENTS-1:0] carryWire;
     logic[AGENTS-1:0] request;
+    logic[AGENTS-1:0] grants;
+
+    logic setGrant;
+
+    assign g = setGrant?grants:'b0;
 
     genvar iIter;
     generate
@@ -29,12 +34,12 @@ module Arbiter #(parameter AGENTS = 8)
         begin
             if(iIter == 0)
             begin
-                assign g[iIter] = request[iIter];
+                assign grants[iIter] = request[iIter];
                 assign carryWire[iIter] = ~request[iIter];
             end
             else
             begin
-                arbiterCell arbCell(request[iIter], carryWire[iIter-1], g[iIter], carryWire[iIter]);
+                arbiterCell arbCell(request[iIter], carryWire[iIter-1], grants[iIter], carryWire[iIter]);
             end
         end
     endgenerate
@@ -43,10 +48,11 @@ module Arbiter #(parameter AGENTS = 8)
     begin
         if(reset == 1'b1)
         begin
-            g <= 'b0;
+            setGrant <= 1'b0;
         end
         else
         begin
+            setGrant <= 1'b1;
             request <= r;
         end
     end
