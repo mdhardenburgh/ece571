@@ -4,8 +4,15 @@ module arbiterCell(request, carryIn, grant, carryOut);
     output logic grant;
     output logic carryOut;
 
-    assign grant = carryIn & request;
-    assign carryOut = carryIn & ~grant;
+    always_comb 
+    begin
+        grant = carryIn & request;
+        `ifdef cause_single_requestor_always_recieves_grant
+        carryOut = carryIn & grant;
+        `else
+        carryOut = carryIn & ~grant;
+        `endif
+    end
 endmodule
 
 module Arbiter #(parameter AGENTS = 8)
@@ -21,12 +28,12 @@ module Arbiter #(parameter AGENTS = 8)
     output logic[AGENTS-1:0] g;
 
     logic[AGENTS-1:0] carryWire;
-    logic[AGENTS-1:0] request;
     logic[AGENTS-1:0] grants;
+    logic[AGENTS-1:0] prevGrants;
 
-    logic setGrant;
-
-    assign g = setGrant?grants:'b0;
+    `ifdef cause_arbiter_always_produces_grant_in_one_cycle
+        logic[AGENTS-1:0] holdGrants;
+    `endif 
 
     genvar iIter;
     generate
@@ -34,12 +41,19 @@ module Arbiter #(parameter AGENTS = 8)
         begin
             if(iIter == 0)
             begin
-                assign grants[iIter] = request[iIter];
-                assign carryWire[iIter] = ~request[iIter];
+                always_comb
+                begin
+                    `ifdef cause_never_more_than_one_grant
+                    grants[iIter] = 1'b1;
+                    `else
+                    grants[iIter] = r[iIter];
+                    `endif
+                    carryWire[iIter] = ~r[iIter];
+                end
             end
             else
             begin
-                arbiterCell arbCell(request[iIter], carryWire[iIter-1], grants[iIter], carryWire[iIter]);
+                arbiterCell arbCell(r[iIter], carryWire[iIter-1], grants[iIter], carryWire[iIter]);
             end
         end
     endgenerate
@@ -48,12 +62,33 @@ module Arbiter #(parameter AGENTS = 8)
     begin
         if(reset == 1'b1)
         begin
-            setGrant <= 1'b0;
+            g <= 'b0;
+            prevGrants <= 'b0;
         end
         else
         begin
-            setGrant <= 1'b1;
-            request <= r;
+            `ifdef cause_agent_contine_to_request_grant_agent_continue_to_get_grant
+            g <= grants;
+            `else
+            prevGrants <= g;
+            if(prevGrants & r)
+            begin
+                g <= prevGrants;
+            end
+            else
+            begin
+                `ifdef cause_except_reset_grant_never_has_invalid_bits
+                g <= 'bx;
+                `elsif cause_arbiter_always_produces_grant_in_one_cycle
+                holdGrants <= grants;
+                g <= holdGrants;
+                `elsif cause_did_not_request_grant_grant_not_given
+                g <= ~r;
+                `else
+                g <= grants;
+                `endif
+            end
+            `endif
         end
     end
 endmodule

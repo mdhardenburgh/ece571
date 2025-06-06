@@ -7,13 +7,34 @@
     input logic[AGENTS-1:0] g
 );
 
-logic[9:0] grants[AGENTS-1:0];
+logic[9:0] myGrants[AGENTS-1:0];
+
+logic [AGENTS-1:0] r_prev;
 
 always_ff @(posedge clock) 
 begin
-    if (!reset) 
+    if (reset) 
     begin
-        updateGrantVector($past(r), g, grants);
+        r_prev <= '0;
+    end 
+    else 
+    begin
+        r_prev <= r;
+    end
+end
+
+always_ff @(posedge clock) 
+begin
+    if(reset)
+    begin
+        for(int iIter = 0; iIter < AGENTS; iIter++)
+        begin
+            myGrants[iIter] <= 'b0;
+        end
+    end
+    else
+    begin
+        updateGrantVector($past(r), g, myGrants);
     end
 end
 
@@ -53,15 +74,15 @@ end
     disable iff (reset)
     $onehot(r) |-> ##1 ($past(r) == g);
 `END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, single_requestor_always_recieves_grant)
-    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+    $display("rVector: %b, reset: %b, gVector: %b", (r), reset, g);
 `END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, did_not_request_grant_grant_not_given)
     @(posedge clock)
     disable iff (reset)
-    (checkIfNotReqGrantGiven($past(r), g) == 1'b0);
+    (checkIfNotReqGrantGiven(r, Arbiter.grants) == 1'b0);
 `END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, did_not_request_grant_grant_not_given)
-    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, Arbiter.grants);
 `END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, agent_contine_to_request_grant_agent_continue_to_get_grant)
@@ -70,29 +91,29 @@ end
     // if had grant before, requesting it again, it should be given grant again
     (checkIfRequestorHadGrantBefore(r, $past(g)) == 1'b1) |=>  ##1 (checkIfRequestorHadGrantBefore($past(r), g) == 1'b1);
 `END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, agent_contine_to_request_grant_agent_continue_to_get_grant);
-    $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
+    $display("rVector: %b, reset: %b, gVector: %b", r, reset, (g));
 `END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 `CONCURENT_PROPERTY_ERROR(ArbiterAssertions, after_grant_agent_does_not_contine_to_request_after_256_cycles)
     @(posedge clock)
     disable iff (reset)
-    checkGrantVector(grants) == 0;
+    checkGrantVector(myGrants) == 0;
 `END_CONCURENT_PROPERTY_ERROR_PRINT(ArbiterAssertions, after_grant_agent_does_not_contine_to_request_after_256_cycles)
     $display("rVector: %b, reset: %b, gVector: %b", r, reset, g);
 `END_CONCURENT_PROPERTY_ERROR_PRINT_END_PRINT
 
 function automatic int checkIfNotReqGrantGiven(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0] gVector);
-    int true = 0;
+    int volation = 0;
 
     for(int iIter = 0; iIter < AGENTS; iIter++)
     begin
         if((rVector[iIter] === 1'b0) && (gVector[iIter] === 1'b1))
         begin
-            true = 1;
+            volation = 1;
             break;
         end
     end
-    return true;
+    return volation;
 endfunction
 
 // if had grant before, requesting it again, it should be given grant again
@@ -110,29 +131,31 @@ function automatic int checkIfRequestorHadGrantBefore(logic[AGENTS-1:0] rVector,
     return true;
 endfunction
 
-function automatic void updateGrantVector(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0]gVector, ref logic[9:0] grants[AGENTS-1:0]);
+function automatic void updateGrantVector(logic[AGENTS-1:0] rVector, logic[AGENTS-1:0]gVector, ref logic[9:0] myGrants[AGENTS-1:0]);
+    //$display("rVector: %b, gVector %b", rVector, gVector);
     for(int iIter = 0; iIter < AGENTS; iIter++)
     begin
+        //$display("Agent: %d, myGrants: %d", iIter, myGrants[iIter]);
         if(rVector[iIter] === 1'b0)
         begin
-            grants[iIter] = 'b0;
+            myGrants[iIter] = 'b0;
+        end
+        else if(myGrants[iIter] > 1'b0 && rVector[iIter] === 1'b1)
+        begin
+            myGrants[iIter]++;
         end
         else if(gVector[iIter] === 1'b1 && rVector[iIter] === 1'b1)
         begin
-            grants[iIter] = 'b1;
-        end
-        else if(grants[iIter] >= 1'b1 && rVector[iIter] === 1'b1)
-        begin
-            grants[iIter]++;
+            myGrants[iIter] = 'b1;
         end
     end
 endfunction
 
-function automatic int checkGrantVector(logic[9:0] grants[AGENTS-1:0]);
+function automatic int checkGrantVector(logic[9:0] myGrants[AGENTS-1:0]);
     int true = 0;
     for(int iIter = 0; iIter < AGENTS; iIter++)
     begin
-        if(grants[iIter] > 256)
+        if(myGrants[iIter] > 512)
         begin
             true = iIter;
             break;

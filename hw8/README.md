@@ -1,0 +1,11 @@
+# Causing Assertions
+To define on the command line to at least cause the specified assertions:
+* cause_request_vector_has_invalid_bits to cause the assertion "request_vector_never_has_invalid_bits"
+* cause_except_reset_grant_never_has_invalid_bits to cause the assertion "except_reset_grant_never_has_invalid_bits"
+* cause_arbiter_always_produces_grant_in_one_cycle to cause the assertion "arbiter_always_produces_grant_in_one_cycle"
+* cause_arbiter_always_produces_grant_in_one_cycle to cause the assertion "arbiter_always_produces_grant_in_one_cycle"
+* cause_never_more_than_one_grant to cause the assertion "never_more_than_one_grant"
+* cause_single_requestor_always_recieves_grant to cause the assertion "single_requestor_always_recieves_grant"
+* cause_did_not_request_grant_grant_not_given to cause the assertion "did_not_request_grant_grant_not_given"
+* cause_agent_contine_to_request_grant_agent_continue_to_get_grant to cause the assertion "agent_contine_to_request_grant_agent_continue_to_get_grant"
+* cause_after_grant_agent_does_not_contine_to_request_after_256_cycles to cause the assertion "after_grant_agent_does_not_contine_to_request_after_256_cycles"
